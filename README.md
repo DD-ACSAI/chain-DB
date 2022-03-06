@@ -15,4 +15,5 @@ and allowing him to visualize the data in a graphically pleasing way.
 
 ## Why Space?
 The first and most logical reason that we provide for the choice of our project is: *space is cool*, the more academical one is that astronomy and orbital mechanics is a game of relationships: Moons orbit Planets, Planets orbit Stars and Stars orbit Galaxies, with anything inbetween being related through the fundamental force of gravity.
-W can also use this wide scenario (practically the whole universe) to store data about scientifical discoveries and events/anomalies that are located in certain points in space and related to certain astronomical bodies, and, in turn, also store information about the scientists that performed these discoveries and their respective organizations.
+
+We can also use this wide scenario (practically the whole universe) to store data about scientifical discoveries and events/anomalies that are located in certain points in space and related to certain astronomical bodies, and, in turn, also store information about the scientists that performed these discoveries and their respective organizations.
