@@ -1,0 +1,27 @@
+% Should we use twocolumn or onecolumn?
+%   D: I vouch for twocolumn since it is more compact and I
+%       expect to draw the ER-Diag in a whole page for itself.
+%       (Don't think something bigger will ever be in the doc)
+% Using draft mode for now
+% \documentclass[a4paper, twocolumn, draft]{article}
+% Also, what style do we want to use? I suggest: IEEETran
+\documentclass[a4paper, draft, technote, twocolumn, romanappendices]{IEEEtran}
+
+\begin{document}
+
+    \title{A Logistic-Chain Oriented Database}
+    \author{Dario Loi, Davide Marincione}
+    \markboth{Database project documentation}{}% In technote mode nothing should be in the second part
+    \maketitle
+    \begin{abstract}
+        Our objective is to build a database representing the relationships
+        in supply chains and provide information about the possible routes
+        and their methods of transportation: both for raw materials and
+        manufactured goods and their respective centers of production.
+        The implementation will provide utility tools for possible users
+        to make informed decisions about the best course of
+        action when facing the logistical challenges of distribution.
+    \end{abstract}
+
+    
+\end{document}

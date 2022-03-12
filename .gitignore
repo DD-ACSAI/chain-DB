@@ -348,3 +348,11 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+
+# Added by Davide
+.vs/
+.vscode/
+
+# Wouldn't want to get all of that compilation bullshittery
+*.pdf
