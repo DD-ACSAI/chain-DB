@@ -17,6 +17,10 @@ inline bool statusFailed(ExecStatusType status)
     return status == PGRES_EMPTY_QUERY || status == PGRES_BAD_RESPONSE || status == PGRES_NONFATAL_ERROR || status == PGRES_FATAL_ERROR;
 }
 
+namespace query
+{
+
+
 /**
  * Begins a SQL transaction and checks for possible errors.
  *
@@ -140,4 +144,7 @@ PGconn* connect(const char* const conninfo)
 #endif // _DEBUG
 
     return conn;
+}
+
+
 }

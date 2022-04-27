@@ -148,7 +148,8 @@
       <StringPooling>true</StringPooling>
       <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
       <OpenMPSupport>false</OpenMPSupport>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>
+      </EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

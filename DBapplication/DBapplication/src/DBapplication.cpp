@@ -24,11 +24,11 @@ int main(int argc, char** argv)
     PGconn* conn;
     PGresult* res = nullptr;
     
-    conn = connect(CONNECT_QUERY);
+    conn = query::connect(CONNECT_QUERY);
 
-    beginTransaction(conn);
+    query::beginTransaction(conn);
     
-    executeQuery("SELECT * FROM \"People\"", res, conn);
+    query::executeQuery("SELECT * FROM \"People\"", res, conn);
 
     unsigned int ntup = PQntuples(res);
     unsigned int nfield = PQnfields(res);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
     printf("we have %u tuples and %u fields", ntup, nfield);
 
     PQclear(res);
-    endTransaction(conn);
+    query::endTransaction(conn);
     
     PQfinish(conn);
 
