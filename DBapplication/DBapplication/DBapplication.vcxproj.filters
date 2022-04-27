@@ -18,12 +18,18 @@
     <ClCompile Include="src\DBapplication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\DButils\CLprinter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\coninfo.h">
+    <ClInclude Include="src\defines\coninfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\queries.h">
+    <ClInclude Include="src\DButils\queries.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DButils\CLprinter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

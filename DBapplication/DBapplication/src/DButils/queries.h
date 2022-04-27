@@ -1,4 +1,5 @@
 #pragma once
+#include "libpq-fe.h"
 
 inline void exit_program(PGconn* connection)
 {

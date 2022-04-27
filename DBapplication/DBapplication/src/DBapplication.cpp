@@ -11,29 +11,33 @@
 #include <string>
 #include <iostream>
 
+// Yes, you heard that right, no crosscompat!
+#include <windows.h>
+
 #define USER     "postgres"
 #define PASSWORD "password"
 #define DB       "postgres"
 
-#include "coninfo.h" // static concat magic to define CONNECT_QUERY
-#include "queries.h"
+#include "defines/coninfo.h" // static concat magic to define CONNECT_QUERY
+#include "DButils/queries.h"
+#include "DButils/CLprinter.h"
 
 int main(int argc, char** argv)
 {
-    const char* conninfo;
     PGconn* conn;
     PGresult* res = nullptr;
+
+    ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
     
     conn = query::connect(CONNECT_QUERY);
 
     query::beginTransaction(conn);
-    
     query::executeQuery("SELECT * FROM \"People\"", res, conn);
 
-    unsigned int ntup = PQntuples(res);
-    unsigned int nfield = PQnfields(res);
+    CLprinter prnt;
 
-    printf("we have %u tuples and %u fields", ntup, nfield);
+    prnt.printTable(res);
+
 
     PQclear(res);
     query::endTransaction(conn);

@@ -168,11 +168,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\coninfo.h" />
-    <ClInclude Include="src\queries.h" />
+    <ClInclude Include="src\DButils\CLprinter.h" />
+    <ClInclude Include="src\defines\coninfo.h" />
+    <ClInclude Include="src\DButils\queries.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
