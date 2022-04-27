@@ -32,11 +32,11 @@ int main(int argc, char** argv)
     conn = query::connect(CONNECT_QUERY);
 
     query::beginTransaction(conn);
-    query::executeQuery("SELECT * FROM \"People\"", res, conn);
+    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Age\"", res, conn);
 
     CLprinter prnt;
 
-    prnt.printTable(res);
+    prnt.printTable(res, TRUE);
 
 
     PQclear(res);

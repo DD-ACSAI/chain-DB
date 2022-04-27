@@ -8,7 +8,7 @@
 class CLprinter
 {
 public:
-	void printTable(PGresult*& res);
+	void printTable(PGresult*& res, bool printAll);
 
 	CLprinter();
 
@@ -20,7 +20,7 @@ private:
 	class outStream
 	{
 	public:
-		void inline flushBuf() { std::cout << stream.str(); stream.str(std::string()); }
+		void inline flushBuf() { std::cout << stream.rdbuf(); stream.str(std::string()); }
 		void inline replaceChar(std::string const& str) { stream.seekp( -static_cast<int>(str.size()), stream.cur); stream << str; }
 		void inline replaceChar(char ch) { stream.seekp(-1, stream.cur); stream << ch; }
 		

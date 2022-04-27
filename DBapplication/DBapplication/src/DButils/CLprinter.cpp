@@ -2,12 +2,13 @@
 #include <cstdint>
 #include <iostream>
 #include <numeric>
+#include <windows.h>
 
 #define ascii(x) static_cast<char>(x)
 #define biguint(x) static_cast<uint64_t>(x)
 #define bigint(x)	static_cast<int64_t>(x)
 
-void CLprinter::printTable(PGresult*& res)
+void CLprinter::printTable(PGresult*& res, bool printAll = false)
 {
 	/*
 	* ASCII table
@@ -24,12 +25,11 @@ void CLprinter::printTable(PGresult*& res)
 	* 187 : top right corner
 	* 188 : bottom right corner
 	*/
-	constexpr const int16_t MAXCELLSIZE = 10;
-	constexpr const int16_t PADDING = 2;
+	constexpr const int16_t MAXCELLSIZE = 20;
+	constexpr const int16_t PADDING = 4;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");
 	static_assert(PADDING % 2 == 0, "PADDING must be even!");
-
 
 	// Gather field names for proper formatting
 
@@ -159,6 +159,24 @@ void CLprinter::printTable(PGresult*& res)
 		if (i % 4 == 0)
 			stream.flushBuf();
 
+		if (!printAll) {
+			if (i % 40 == 0 && i != 0)
+			{
+				HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+				CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
+				GetConsoleScreenBufferInfo(h, &bufferInfo);
+
+				std::cout << "\nPress q to quit scrolling, any other key to keep scrolling: ";
+				int out = std::getchar();
+
+				SetConsoleCursorPosition(h, bufferInfo.dwCursorPosition);
+				std::cout << std::string(60, ' ') << std::flush;
+				if (out == 'q')
+				{
+					break;
+				}
+			}
+		}
 	}
 
 	//Build Footer
