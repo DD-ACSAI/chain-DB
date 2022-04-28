@@ -10,6 +10,7 @@
 #include "assert.h"
 #include <string>
 #include <iostream>
+#include <sstream>
 
 // Yes, you heard that right, no crosscompat!
 #include <windows.h>
@@ -30,19 +31,24 @@ int main(int argc, char** argv)
     ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
     
     conn = query::connect(CONNECT_QUERY);
-
-    query::beginTransaction(conn);
-    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Age\"", res, conn);
-
     CLprinter prnt;
 
-    prnt.printTable(res, TRUE);
+    /*
+    query::atomicQuery("SELECT * FROM information_schema.tables WHERE table_schema = \'public\'", res, conn);
+    prnt.printTable(res);
+    */
 
+
+    query::beginTransaction(conn);
+    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Name\"", res, conn);
+    prnt.printTable(res);
+    
 
     PQclear(res);
     query::endTransaction(conn);
     
     PQfinish(conn);
+
 
     return 0;
 }

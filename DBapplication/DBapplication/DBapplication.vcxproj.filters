@@ -32,5 +32,8 @@
     <ClInclude Include="src\DButils\CLprinter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\defines\clicolors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

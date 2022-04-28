@@ -5,11 +5,12 @@
 #include <sstream>
 #include <iostream>
 #include <assert.h>
+#include <windows.h>
 
 class CLprinter
 {
 public:
-	void printTable(PGresult*& res, bool printAll);
+	void printTable(PGresult*& res, uint64_t maxRow = UINT64_MAX);
 
 	void setPadding(int16_t padSize);
 	int16_t getPadding() const { return parameters.padding; }
@@ -53,6 +54,12 @@ private:
 	void printFields();
 	void printRow(unsigned int i, uint64_t nFields, PGresult*& res);
 
+
+	static const HANDLE hConsole;
+	static const char* RESET;
+	static const char* FIELD;
+	static const char* VALUE;
+	static const char* TABLE;
 	outStream stream;
 
 };

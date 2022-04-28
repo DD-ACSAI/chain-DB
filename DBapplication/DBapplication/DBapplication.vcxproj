@@ -173,6 +173,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\DButils\CLprinter.h" />
+    <ClInclude Include="src\defines\clicolors.h" />
     <ClInclude Include="src\defines\coninfo.h" />
     <ClInclude Include="src\DButils\queries.h" />
   </ItemGroup>

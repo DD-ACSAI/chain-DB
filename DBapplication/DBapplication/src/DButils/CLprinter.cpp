@@ -1,14 +1,14 @@
 ﻿#include "CLprinter.h"
+#include "..\defines\clicolors.h"
 #include <cstdint>
 #include <iostream>
 #include <numeric>
-#include <windows.h>
 
 #define ascii(x)	static_cast<char>(x)
 #define biguint(x)	static_cast<uint64_t>(x)
 #define bigint(x)	static_cast<int64_t>(x)
 
-void CLprinter::printTable(PGresult*& res, bool printAll = false)
+void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 {
 	/*
 	* ASCII table
@@ -32,6 +32,8 @@ void CLprinter::printTable(PGresult*& res, bool printAll = false)
 	uint64_t nFields = PQnfields(res);
 	uint64_t nRows = PQntuples(res);
 
+	nRows = (nRows > maxRow) ? maxRow : nRows;
+
 	for (int i = 0; i < nFields; ++i)
 	{
 		fieldNames.emplace_back(PQfname(res, i));
@@ -53,26 +55,8 @@ void CLprinter::printTable(PGresult*& res, bool printAll = false)
 	{
 		printRow(i, nFields, res);
 
-		if (i % 8 == 0)
+		if (i % 4 == 0)
 			stream.flushBuf();
-
-		if (!printAll && i % 40 == 0 && i != 0) 
-		{
-	
-			HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-			CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
-			GetConsoleScreenBufferInfo(h, &bufferInfo);
-
-			std::cout << "\nPress q to quit scrolling, any other key to keep scrolling: ";
-			int out = std::getchar();
-
-			SetConsoleCursorPosition(h, bufferInfo.dwCursorPosition);
-			std::cout << std::string(60, ' ') << std::flush;
-			if (out == 'q')
-			{
-				break;
-			}
-		}
 	}
 
 	//Build Footer
@@ -119,7 +103,7 @@ CLprinter::CLprinter()
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
 
-	constexpr const int16_t MAXCELLSIZE = 20;
+	constexpr const int16_t MAXCELLSIZE = 12;
 	constexpr const int16_t PADDING = 4;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");
@@ -130,7 +114,7 @@ CLprinter::CLprinter()
 
 void inline CLprinter::printTop(uint64_t nFields)
 {
-	stream << "\n Query Output: \n" << ascii(201);
+	stream << "\n Query Output: \n" << TABLE << ascii(201);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -139,11 +123,12 @@ void inline CLprinter::printTop(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(187));
+	stream << RESET;
 }
 
 void inline CLprinter::printBottom(uint64_t nFields)
 {
-	stream << '\n' << ascii(200);
+	stream << '\n' << TABLE << ascii(200);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -152,12 +137,13 @@ void inline CLprinter::printBottom(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(188));
+	stream << RESET;
 }
 
 void inline CLprinter::printSep(uint64_t nFields)
 {
 
-	stream << '\n' << ascii(204);
+	stream << '\n' << TABLE << ascii(204);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -165,25 +151,28 @@ void inline CLprinter::printSep(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(185));
+	stream << RESET;
 }
 
 void inline CLprinter::printBlank(uint64_t nFields)
 {
-	stream << '\n' << ascii(186);
+	stream << '\n' << TABLE << ascii(186);
 	for (unsigned int c = 0; c < nFields; ++c)
 	{
 		stream << std::string(biguint(parameters.maxcellsize) + biguint(parameters.padding), ' ') << ascii(186);
 	}
+
+	stream << RESET;
 }
 
 void CLprinter::printFields()
 {
-	stream << '\n' << ascii(186);
+	stream << '\n' << TABLE << ascii(186);
 	for (auto& str : fieldNames)
 	{
 		str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
 
-		uint64_t blankspace = biguint(parameters.padding) + biguint(parameters.maxcellsize) - str.size();
+		int64_t blankspace = biguint(parameters.padding) + biguint(parameters.maxcellsize) - str.size();
 		if (blankspace < parameters.padding)
 		{
 			blankspace = parameters.padding;
@@ -194,7 +183,7 @@ void CLprinter::printFields()
 		uint64_t lblank = blankspace / 2;
 		uint64_t rblank = (blankspace % 2 == 0) ? blankspace / 2 : blankspace / 2 + 1;
 
-		stream << std::string(lblank, ' ') << str << std::string(rblank, ' ') << ascii(186);
+		stream << std::string(lblank, ' ') << FIELD << str << RESET << std::string(rblank, ' ') << TABLE << ascii(186) << RESET;
 	}
 
 }
@@ -202,7 +191,7 @@ void CLprinter::printFields()
 void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 {
 
-	stream << '\n' << ascii(186);
+	stream << '\n' << TABLE << ascii(186);
 
 	for (unsigned int j = 0; j < nFields; ++j)
 	{
@@ -222,7 +211,10 @@ void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 		uint64_t lblank = blankspace / 2;
 		uint64_t rblank = (blankspace % 2 == 0) ? blankspace / 2 : blankspace / 2 + 1;
 
-		stream << std::string(lblank, ' ') << str_val << std::string(rblank, ' ') << ascii(186);
+		stream << std::string(lblank, ' ') << VALUE << str_val << VALUE << std::string(rblank, ' ') << TABLE << ascii(186) << RESET;
 		}
 
 }
+
+const HANDLE CLprinter::hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
