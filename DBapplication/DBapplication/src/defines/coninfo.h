@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 
 
 #ifdef DB
@@ -32,5 +33,4 @@
 #endif // USER
 
 #define CONNECT_QUERY DBSTRING PWSTR USERSTR
-
 

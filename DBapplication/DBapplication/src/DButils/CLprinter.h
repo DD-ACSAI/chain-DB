@@ -4,15 +4,29 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <assert.h>
 
 class CLprinter
 {
 public:
 	void printTable(PGresult*& res, bool printAll);
 
+	void setPadding(int16_t padSize);
+	int16_t getPadding() const { return parameters.padding; }
+
+	void setMaxCellSize(int16_t cellSize);
+	int16_t getMaxCellSize() const { return parameters.maxcellsize; }
+
 	CLprinter();
 
 private:
+
+	struct printParam {
+		int16_t padding;
+		int16_t maxcellsize;
+	};
+
+	printParam parameters;
 
 	std::vector<std::string> fieldNames;
 	std::vector<uint64_t>	 fieldLen;
@@ -31,6 +45,13 @@ private:
 	private:
 		std::stringstream stream;
 	};
+
+	void printTop(uint64_t nFields);
+	void printBottom(uint64_t nFields);
+	void printSep(uint64_t nFields);
+	void printBlank(uint64_t nFields);
+	void printFields();
+	void printRow(unsigned int i, uint64_t nFields, PGresult*& res);
 
 	outStream stream;
 
