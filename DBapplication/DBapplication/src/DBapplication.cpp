@@ -26,6 +26,7 @@
 #include "defines/coninfo.h" // static concat magic to define CONNECT_QUERY
 #include "DButils/queries.h"
 #include "DButils/CLprinter.h"
+#include "manager/dbhierarchy/Dbnode.h"
 
 int main(int argc, char** argv)
 {
@@ -38,29 +39,20 @@ int main(int argc, char** argv)
     conn = query::connect(CONNECT_QUERY);
     CLprinter prnt;
 
-    query::atomicQuery("SELECT * FROM information_schema.tables WHERE table_schema = \'public\'", res, conn);
-    prnt.printTable(res);
+    Dbnode<DBNODETYPE::ROOT, DBNODETYPE::SCHEMA> root("Root");
+    root.addChildren( std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A") );
+    root.addChildren(std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A"));
+    root.addChildren(std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A"));
 
-    PQclear(res);
-    std::getchar();
+    auto const& c = root.getChildren();
 
-    query::beginTransaction(conn);
-    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Name\"", res, conn);
-    prnt.printTable(res);
+    for (auto const& p : c)
+    {
+        std::clog << p->getName();
+        p->addChildren(std::make_unique<Dbnode<DBNODETYPE::TABLE, DBNODETYPE::NONE>>("B"));
+    }
 
-    std::getchar();
-
-    PQclear(res);
-    query::beginTransaction(conn);
-    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Name\"", res, conn);
-    prnt.printTable(res);
-    
-
-    PQclear(res);
-    query::endTransaction(conn);
-    
-    PQfinish(conn);
-
+    root.printRecursive();
 
     return 0;
 }

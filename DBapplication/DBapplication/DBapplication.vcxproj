@@ -117,6 +117,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(PROGRAMFILES)\PostgreSQL\14\include;$(PROGRAMFILES)\PostgreSQL\14\include\server</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,6 +151,7 @@
       <OpenMPSupport>false</OpenMPSupport>
       <EnableEnhancedInstructionSet>
       </EnableEnhancedInstructionSet>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -168,10 +170,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\manager\dbhierarchy\Dbnode.cpp" />
+    <ClCompile Include="src\manager\DBmanager.cpp" />
     <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\manager\dbhierarchy\Dbnode.h" />
+    <ClInclude Include="src\manager\DBmanager.h" />
     <ClInclude Include="src\DButils\CLprinter.h" />
     <ClInclude Include="src\defines\clicolors.h" />
     <ClInclude Include="src\defines\coninfo.h" />
