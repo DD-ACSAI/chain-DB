@@ -13,7 +13,11 @@
 #include <sstream>
 
 // Yes, you heard that right, no crosscompat!
-#include <windows.h>
+#ifdef _WIN32
+    #include <Windows.h>
+#else
+    #error "No compatibility, sorry!"
+#endif
 
 #define USER     "postgres"
 #define PASSWORD "password"
@@ -29,6 +33,7 @@ int main(int argc, char** argv)
     PGresult* res = nullptr;
 
     ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
+    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     
     conn = query::connect(CONNECT_QUERY);
     CLprinter prnt;

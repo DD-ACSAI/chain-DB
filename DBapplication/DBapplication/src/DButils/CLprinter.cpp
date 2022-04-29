@@ -1,5 +1,5 @@
 ﻿#include "CLprinter.h"
-#include "..\defines\clicolors.h"
+#include "../defines/clicolors.h"
 #include <cstdint>
 #include <iostream>
 #include <numeric>
@@ -25,7 +25,6 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	* 187 : top right corner
 	* 188 : bottom right corner
 	*/
-
 
 	// Gather field names for proper formatting
 
