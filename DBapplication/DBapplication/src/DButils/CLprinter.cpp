@@ -64,6 +64,8 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	printBottom(nFields);
 
 	stream.flushBuf();
+	fieldNames.clear();
+	fieldLen.clear();
 }
 
 void CLprinter::setPadding(int16_t padSize) {

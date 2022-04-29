@@ -38,12 +38,19 @@ int main(int argc, char** argv)
     conn = query::connect(CONNECT_QUERY);
     CLprinter prnt;
 
-    /*
     query::atomicQuery("SELECT * FROM information_schema.tables WHERE table_schema = \'public\'", res, conn);
     prnt.printTable(res);
-    */
 
+    PQclear(res);
+    std::getchar();
 
+    query::beginTransaction(conn);
+    query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Name\"", res, conn);
+    prnt.printTable(res);
+
+    std::getchar();
+
+    PQclear(res);
     query::beginTransaction(conn);
     query::executeQuery("SELECT * FROM \"People\" ORDER BY \"Name\"", res, conn);
     prnt.printTable(res);
