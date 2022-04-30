@@ -5,7 +5,8 @@
 #include <sstream>
 #include <iostream>
 #include <assert.h>
-#include <windows.h>
+#include <Windows.h>
+#include "../manager/dbhierarchy/Dbnode.h"
 
 class CLprinter
 {
@@ -56,10 +57,6 @@ private:
 
 
 	static const HANDLE hConsole;
-	static const char* RESET;
-	static const char* FIELD;
-	static const char* VALUE;
-	static const char* TABLE;
 	outStream stream;
 
 };

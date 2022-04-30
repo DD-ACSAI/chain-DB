@@ -2,6 +2,7 @@
 #include <type_traits>
 #include <string>
 #include <map>
+#include "../../defines/clicolors.h"
 #include <iostream>
 
 enum class NODE : char  {
@@ -58,12 +59,21 @@ public:
 
 	std::string getName() const { return nodeName; }
 	void printRecursive(short depth = 0) const {
-		std::clog << std::string(depth++, '\t') << nodeName << std::endl;
+
+		char first = []() constexpr {
+			if constexpr (T == NODE::ROOT)
+				return char(201);
+			else
+				return char(199);
+		}();
+
+		std::clog << ' ' << color::STRUCTURE << first << std::string(4 * depth++, char(196)) << ' ' << color::RESET << nodeName << std::endl;
 		for (auto const& c : children)
 		{
 			c.second.printRecursive(depth);
 		}
 	}
+
 
 	Dbnode() : nodeName("root") { static_assert(true, "Default initialization prohibited!"); };	//here just for unordered_map pre-alloc purposes
 };

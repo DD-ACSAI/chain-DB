@@ -118,7 +118,7 @@ CLprinter::CLprinter()
 
 void inline CLprinter::printTop(uint64_t nFields)
 {
-	stream << "\n Query Output: \n" << TABLE << ascii(201);
+	stream << "\n Query Output: \n" << color::STRUCTURE << ascii(201);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -127,12 +127,12 @@ void inline CLprinter::printTop(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(187));
-	stream << RESET;
+	stream << color::RESET;
 }
 
 void inline CLprinter::printBottom(uint64_t nFields)
 {
-	stream << '\n' << TABLE << ascii(200);
+	stream << '\n' << color::STRUCTURE << ascii(200);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -141,13 +141,13 @@ void inline CLprinter::printBottom(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(188));
-	stream << RESET;
+	stream << color::RESET;
 }
 
 void inline CLprinter::printSep(uint64_t nFields)
 {
 
-	stream << '\n' << TABLE << ascii(204);
+	stream << '\n' << color::STRUCTURE << ascii(204);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -155,23 +155,23 @@ void inline CLprinter::printSep(uint64_t nFields)
 	}
 
 	stream.replaceChar(ascii(185));
-	stream << RESET;
+	stream << color::RESET;
 }
 
 void inline CLprinter::printBlank(uint64_t nFields)
 {
-	stream << '\n' << TABLE << ascii(186);
+	stream << '\n' << color::STRUCTURE << ascii(186);
 	for (unsigned int c = 0; c < nFields; ++c)
 	{
 		stream << std::string(biguint(parameters.maxcellsize) + biguint(parameters.padding), ' ') << ascii(186);
 	}
 
-	stream << RESET;
+	stream << color::RESET;
 }
 
 void CLprinter::printFields()
 {
-	stream << '\n' << TABLE << ascii(186);
+	stream << '\n' << color::STRUCTURE << ascii(186);
 	for (auto& str : fieldNames)
 	{
 		str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
@@ -187,7 +187,7 @@ void CLprinter::printFields()
 		uint64_t lblank = blankspace / 2;
 		uint64_t rblank = (blankspace % 2 == 0) ? blankspace / 2 : blankspace / 2 + 1;
 
-		stream << std::string(lblank, ' ') << FIELD << str << RESET << std::string(rblank, ' ') << TABLE << ascii(186) << RESET;
+		stream << std::string(lblank, ' ') << color::FIELD << str << color::RESET << std::string(rblank, ' ') << color::STRUCTURE << ascii(186) << color::RESET;
 	}
 
 }
@@ -195,7 +195,7 @@ void CLprinter::printFields()
 void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 {
 
-	stream << '\n' << TABLE << ascii(186);
+	stream << '\n' << color::STRUCTURE << ascii(186);
 
 	for (unsigned int j = 0; j < nFields; ++j)
 	{
@@ -215,10 +215,11 @@ void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 		uint64_t lblank = blankspace / 2;
 		uint64_t rblank = (blankspace % 2 == 0) ? blankspace / 2 : blankspace / 2 + 1;
 
-		stream << std::string(lblank, ' ') << VALUE << str_val << VALUE << std::string(rblank, ' ') << TABLE << ascii(186) << RESET;
+		stream << std::string(lblank, ' ') << color::VALUE << str_val << color::VALUE << std::string(rblank, ' ') << color::STRUCTURE << ascii(186) << color::RESET;
 		}
 
 }
+
 
 const HANDLE CLprinter::hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
