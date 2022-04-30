@@ -1,5 +1,10 @@
 #pragma once
 #include "libpq-fe.h"
+#include <stdint.h>
+
+#include <memory>
+#include <string>
+#include <stdexcept>
 
 inline void exit_program(PGconn* connection)
 {
@@ -147,5 +152,39 @@ PGconn* connect(const char* const conninfo)
     return conn;
 }
 
+struct queryRes
+{
+public:
+    uint64_t fields;
+    uint64_t rows;
+    bool successful;
+
+    explicit queryRes(PGresult*& res)
+    {
+        fields = PQnfields(res);
+        rows = PQntuples(res);
+        successful = !(statusFailed(PQresultStatus(res)) || res == nullptr);
+    }
+};
+
+/**
+ * Formats a string in a "pythonic" way.
+ * 
+ * Taken from: https://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+ * 
+ * \param format String to format
+ * \param ...args Variadic pack of arguments
+ * \return A formatted string
+ */
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args)
+{
+    int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+    if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
+    auto size = static_cast<size_t>(size_s);
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), args ...);
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
 
 }

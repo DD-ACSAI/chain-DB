@@ -1,4 +1,4 @@
-
+#pragma once
 /*
 
     This stuff is actually C, not Cxx, but if we are careful it *should* work just fine, right?
@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <memory>
 
 // Yes, you heard that right, no crosscompat!
 #ifdef _WIN32
@@ -27,32 +28,19 @@
 #include "DButils/queries.h"
 #include "DButils/CLprinter.h"
 #include "manager/dbhierarchy/Dbnode.h"
+#include "manager/DBmanager.h"
 
 int main(int argc, char** argv)
 {
-    PGconn* conn;
-    PGresult* res = nullptr;
+    auto conn = query::connect(CONNECT_QUERY);
+
 
     ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
     SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+    DBmanager man(conn);
+    PQfinish(conn);
     
-    conn = query::connect(CONNECT_QUERY);
-    CLprinter prnt;
-
-    Dbnode<DBNODETYPE::ROOT, DBNODETYPE::SCHEMA> root("Root");
-    root.addChildren( std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A") );
-    root.addChildren(std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A"));
-    root.addChildren(std::make_unique<Dbnode<DBNODETYPE::SCHEMA, DBNODETYPE::TABLE>>("A"));
-
-    auto const& c = root.getChildren();
-
-    for (auto const& p : c)
-    {
-        std::clog << p->getName();
-        p->addChildren(std::make_unique<Dbnode<DBNODETYPE::TABLE, DBNODETYPE::NONE>>("B"));
-    }
-
-    root.printRecursive();
 
     return 0;
 }

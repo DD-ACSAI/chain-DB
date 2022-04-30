@@ -1,80 +1,69 @@
 #pragma once
 #include <type_traits>
-#include <vector>
-#include <memory> // the seventh seal hath been broken
 #include <string>
+#include <map>
+#include <iostream>
 
-enum class DBNODETYPE : short  {
+enum class NODE : char  {
 	ROOT,
 	SCHEMA,
 	TABLE,
 	NONE
 };
 
-template<DBNODETYPE T, DBNODETYPE CHILD>
+template<NODE T>
 class Dbnode
 {
 
 private:
 
-	constexpr const static DBNODETYPE CHILDCHILD = []() constexpr
+	constexpr const static NODE CHILD = []() constexpr // Child type
 	{
-		if constexpr (CHILD == DBNODETYPE::SCHEMA)
+		switch (T)
 		{
-			constexpr const auto val = DBNODETYPE::TABLE;
-			return val;
-		}
-		else
-		{
-			constexpr const auto val = DBNODETYPE::NONE;
-			return val;
+		case NODE::ROOT:
+			return NODE::SCHEMA;
+		break;
+		case NODE::SCHEMA:
+			return NODE::TABLE;
+		break;
+		case NODE::TABLE:
+			return NODE::NONE;
+		break;
+		case NODE::NONE:
+			return NODE::NONE;
+		break;
+		default:
+			static_assert(true, "unhandled Type in Dbnode.h");
 		}
 	}();
 
-	using child = Dbnode<CHILD, Dbnode::CHILDCHILD>; // we hide this monstrosity
-	using childs = std::vector<std::unique_ptr<child>>;
+	using child = Dbnode<CHILD>; // we hide this monstrosity	
+	using childs = std::map<std::string, child>;
 
-	childs children;
-	std::string dbName;
-	const DBNODETYPE type;
-	
-
-	static_assert(	T == DBNODETYPE::ROOT && CHILD == DBNODETYPE::SCHEMA
-		|| T == DBNODETYPE::SCHEMA && CHILD == DBNODETYPE::TABLE
-		|| T == DBNODETYPE::TABLE && CHILD == DBNODETYPE::NONE
-		|| T == DBNODETYPE::NONE && CHILD == DBNODETYPE::NONE,
-				"The node must have a valid children type, current type pairing: " );
-
+	childs children;						// children dictionary
+	std::string nodeName;					// Node name
+	constexpr static const NODE type = T;	// Node Type
 
 public:
-	childs const& getChildren() const { return children; }
-	void addChildren(std::unique_ptr<child> c) { children.emplace_back( std::move(c) ); }
-	explicit Dbnode(std::string const& name) : dbName(name), type(T) {}
-	std::string getName() const { return dbName; }
-	void printRecursive() const {
-		std::clog << dbName;
+
+	childs const& getChildren() const { static_assert(CHILD != NODE::NONE, "This node does not have children."); return children; }
+
+	void addChildren(std::string const& cname) { static_assert(CHILD != NODE::NONE, "This node does not have children."); children.emplace( cname, Dbnode<CHILD>(cname) ); }
+	void addChildren(Dbnode<CHILD> const& c) { static_assert(CHILD != NODE::NONE, "This node does not have children."); children.emplace(c.getName(), c); }
+
+	explicit Dbnode(std::string const& name) : nodeName(name) { static_assert(T != NODE::NONE, "Cannot initialize a NONE node."); }
+
+	Dbnode<CHILD>& operator[](std::string const& key) { return children[key]; }
+
+	std::string getName() const { return nodeName; }
+	void printRecursive(short depth = 0) const {
+		std::clog << std::string(depth++, '\t') << nodeName << std::endl;
 		for (auto const& c : children)
 		{
-			c->printRecursive();
+			c.second.printRecursive(depth);
 		}
 	}
 
-	Dbnode(Dbnode&& node) : type(T), dbName(node.dbName)
-	{
-		this->children.reserve(node.children.size());
-		for (auto const& c : node.children) 
-		{
-			this->children.emplace_back(std::move(c));
-		}
-	}
-
-	Dbnode(Dbnode const& node) : type(T), dbName(node.dbName)
-	{
-		this->children.reserve(node.children.size());
-		for (auto const& c : node.children)
-		{
-			this->children.emplace_back(std::move(c));
-		}
-	}
-
+	Dbnode() : nodeName("root") { static_assert(true, "Default initialization prohibited!"); };	//here just for unordered_map pre-alloc purposes
 };

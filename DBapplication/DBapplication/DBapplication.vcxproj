@@ -124,6 +124,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(PROGRAMFILES)\PostgreSQL\14\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libpq.lib;libintl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerbose</ShowProgress>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
     <CustomBuildStep>
       <Command>
@@ -170,12 +172,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\manager\dbhierarchy\Dbnode.cpp" />
-    <ClCompile Include="src\manager\DBmanager.cpp" />
     <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\DButils\DBpointers.h" />
     <ClInclude Include="src\manager\dbhierarchy\Dbnode.h" />
     <ClInclude Include="src\manager\DBmanager.h" />
     <ClInclude Include="src\DButils\CLprinter.h" />

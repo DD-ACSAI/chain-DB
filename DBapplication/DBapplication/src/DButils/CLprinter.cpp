@@ -1,4 +1,5 @@
-﻿#include "CLprinter.h"
+﻿#pragma once
+#include "CLprinter.h"
 #include "../defines/clicolors.h"
 #include <cstdint>
 #include <iostream>
@@ -62,6 +63,8 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 
 	printBlank(nFields);
 	printBottom(nFields);
+
+	stream << "" << std::endl;
 
 	stream.flushBuf();
 	fieldNames.clear();
