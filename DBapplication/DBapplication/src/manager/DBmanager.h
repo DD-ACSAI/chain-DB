@@ -17,6 +17,7 @@ public:
 	
 	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection)
 	{
+		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 

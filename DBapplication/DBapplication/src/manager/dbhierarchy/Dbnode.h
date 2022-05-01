@@ -4,6 +4,7 @@
 #include <map>
 #include "../../defines/clicolors.h"
 #include <iostream>
+#include <string_view>
 
 enum class NODE : char  {
 	ROOT,
@@ -58,21 +59,31 @@ public:
 	Dbnode<CHILD>& operator[](std::string const& key) { return children[key]; }
 
 	std::string getName() const { return nodeName; }
-	void printRecursive(short depth = 0) const {
 
-		char first = []() constexpr {
+	void printRecursive(short depth = 0) const 
+	{
+
+		auto constexpr head = []() constexpr {
 			if constexpr (T == NODE::ROOT)
-				return char(201);
-			else
-				return char(199);
+			{
+				return " \xC9 ";
+			} else 
+				if constexpr (T == NODE::SCHEMA)
+				{
+					return " \xCC\xCD\xCD\xCD\xD1 ";
+				}
+				else // NODE::TABLE 
+				{
+					return " \xBA   \xC3\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4 ";
+				}
 		}();
 
-		std::clog << ' ' << color::STRUCTURE << first << std::string(4 * depth++, char(196)) << ' ' << color::RESET << nodeName << std::endl;
+		std::clog << color::STRUCTURE << head << color::RESET << nodeName << std::endl;
 		for (auto const& c : children)
 		{
 			c.second.printRecursive(depth);
 		}
-	}
+	};
 
 
 	Dbnode() : nodeName("root") { static_assert(true, "Default initialization prohibited!"); };	//here just for unordered_map pre-alloc purposes

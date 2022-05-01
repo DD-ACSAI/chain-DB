@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /*
 
     This stuff is actually C, not Cxx, but if we are careful it *should* work just fine, right?
@@ -42,5 +42,7 @@ int main(int argc, char** argv)
     PQfinish(conn);
     
 
+    
+    int x = 0;
     return 0;
 }
