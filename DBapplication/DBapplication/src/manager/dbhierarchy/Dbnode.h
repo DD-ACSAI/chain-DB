@@ -57,11 +57,23 @@ public:
 	explicit Dbnode(std::string const& name) : nodeName(name) { static_assert(T != NODE::NONE, "Cannot initialize a NONE node."); }
 
 	Dbnode<CHILD>& operator[](std::string const& key) { return children[key]; }
+	template<typename I> Dbnode<CHILD>& operator[](I indx)
+	{
+		static_assert(std::is_integral_v<I>, "Must be indexed by an integral type");
+		auto it = children.begin();
+		std::advance(it, indx);
+		return it->second;
+	}
+
 
 	std::string getName() const { return nodeName; }
 
-	void printRecursive(short depth = 0) const 
+	template<typename S>
+	void printRecursive(S selected) const 
 	{
+
+		static_assert(std::is_same_v<S, std::string&> || std::is_same_v<S, const char*>
+			|| std::is_same_v<S, std::string> || std::is_same_v<S, char*>, "Must use a string/string literal/Cstring");
 
 		auto constexpr head = []() constexpr {
 			if constexpr (T == NODE::ROOT)
@@ -78,12 +90,21 @@ public:
 				}
 		}();
 
-		std::clog << color::STRUCTURE << head << color::RESET << nodeName << std::endl;
+		std::clog << color::STRUCTURE << head << color::RESET;
+
+		if (nodeName.compare(selected) == 0)
+			std::clog << color::SELECTED << nodeName << color::RESET;
+		else
+			std::clog << nodeName;
+
+		std::clog << std::endl;
+
 		for (auto const& c : children)
 		{
-			c.second.printRecursive(depth);
+			c.second.printRecursive(selected);
 		}
 	};
+
 
 
 	Dbnode() : nodeName("root") { static_assert(true, "Default initialization prohibited!"); };	//here just for unordered_map pre-alloc purposes

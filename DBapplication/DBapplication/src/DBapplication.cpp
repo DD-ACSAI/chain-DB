@@ -33,16 +33,20 @@
 int main(int argc, char** argv)
 {
     auto conn = query::connect(CONNECT_QUERY);
-
+    PGresult* res = nullptr;
 
     ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
     SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
     DBmanager man(conn);
+
+    /*
+    query::atomicQuery("SELECT * FROM \"public\".\"People\"", res, conn);
+    CLprinter pr;
+    pr.printTable(res);
+    */
+
     PQfinish(conn);
     
-
-    
-    int x = 0;
     return 0;
 }

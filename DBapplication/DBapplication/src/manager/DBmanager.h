@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <utility>
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
 #include "../DButils/CLprinter.h"
@@ -15,7 +16,7 @@ class DBmanager
 {
 public:
 	
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(0, 0, 0), selecting()
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
@@ -65,18 +66,40 @@ public:
 		 
 #ifdef _DEBUG
 
-		std::cout << "recursive print on ROOT node" << std::endl << std::endl;
-		root.printRecursive();
+#endif // 
 
-#endif
+		std::cout << "recursive print on ROOT node" << std::endl << std::endl;
+		printFS();
 
 	}
-private:
 
-	
+	void printFS()
+	{
+		auto sel = std::string("");
+		switch ( std::get<0>(selected) )
+		{
+		case 0:
+			sel = root.getName();
+			break;
+		case 1:
+			sel = root[std::get<1>(selected)].getName();
+			break;
+		case 2:
+			sel = root[std::get<1>(selected)][std::get<2>(selected)].getName();
+			break;
+		default:
+			assert(false);
+		}
+
+		root.printRecursive(sel);
+	}
+
+private:
 	Dbnode<NODE::ROOT> root;
 	PGresult* res;
 	DBptr<PGconn> conn;
 	CLprinter printUtil;
+	std::tuple<uint16_t, uint16_t, uint16_t> selected;
+	uint8_t selecting;
 };
 
