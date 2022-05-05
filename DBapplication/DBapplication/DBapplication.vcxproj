@@ -174,9 +174,11 @@
   <ItemGroup>
     <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
+    <ClCompile Include="src\manager\DBmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\DButils\DBpointers.h" />
+    <ClInclude Include="src\defines\DBkeys.h" />
     <ClInclude Include="src\manager\dbhierarchy\Dbnode.h" />
     <ClInclude Include="src\manager\DBmanager.h" />
     <ClInclude Include="src\DButils\CLprinter.h" />

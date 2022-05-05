@@ -32,7 +32,7 @@ namespace query
  *
  * \param connection    Pointer to a Database Connection.
  */
-void beginTransaction(PGconn*& connection)
+static void beginTransaction(PGconn*& connection)
 {
     PGresult* res = PQexec(connection, "BEGIN");
 
@@ -55,7 +55,7 @@ void beginTransaction(PGconn*& connection)
  *
  * \param connection    Pointer to a Database Connection.
  */
-void endTransaction(PGconn*& connection)
+static void endTransaction(PGconn*& connection)
 {
     PGresult* res = PQexec(connection, "END");
     if (statusFailed(PQresultStatus(res)) || res == nullptr)
@@ -80,7 +80,7 @@ void endTransaction(PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
+static void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
 {
     res = PQexec(connection, query);
 
@@ -111,7 +111,7 @@ void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-void atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
+static void atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
 {
     beginTransaction(connection);
     executeQuery(query, res, connection);
@@ -125,7 +125,7 @@ void atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
  * \param conninfo const CString storing all the parameters of the connection.
  * \return      Returns a pointer to PGconn, a struct representing a connection to the DB.
  */
-PGconn* connect(const char* const conninfo)
+static PGconn* connect(const char* const conninfo)
 {
     PGconn* conn = PQconnectdb(conninfo);
 

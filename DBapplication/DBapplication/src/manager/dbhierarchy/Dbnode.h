@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string_view>
 
-enum class NODE : char  {
+enum class NODE : char {
 	ROOT,
 	SCHEMA,
 	TABLE,
