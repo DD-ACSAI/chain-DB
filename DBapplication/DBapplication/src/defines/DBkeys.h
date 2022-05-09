@@ -5,6 +5,7 @@ constexpr auto W_KEY = 'w';
 constexpr auto A_KEY = 'a';
 constexpr auto S_KEY = 's';
 constexpr auto D_KEY = 'd';
+constexpr auto H_KEY = 'h';
 constexpr auto UP_KEY = 1152;
 constexpr auto LEFT_KEY = 1200;
 constexpr auto DOWN_KEY = 1280;

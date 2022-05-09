@@ -21,6 +21,10 @@ public:
 
 	CLprinter();
 
+	static HANDLE getHandle() { return hConsole; }
+	static void setPos(int x, int y);
+	static std::pair<int, int> getPos();
+
 private:
 
 	struct printParam {
@@ -39,6 +43,8 @@ private:
 		void inline flushBuf() { std::cout << stream.rdbuf(); stream.str(std::string()); }
 		void inline replaceChar(std::string const& str) { stream.seekp( -static_cast<int>(str.size()), stream.cur); stream << str; }
 		void inline replaceChar(char ch) { stream.seekp(-1, stream.cur); stream << ch; }
+
+
 		
 		// Voodoo? voodoo.
 		inline std::ostream& operator<<(std::string const& str) { stream << str; return stream; }

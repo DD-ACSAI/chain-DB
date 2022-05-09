@@ -5,6 +5,8 @@
 #include "../../defines/clicolors.h"
 #include <iostream>
 #include <string_view>
+#include <sstream>
+#include <set>
 
 enum class NODE : char {
 	ROOT,
@@ -46,6 +48,7 @@ private:
 	childs children;						// children dictionary
 	std::string nodeName;					// Node name
 	constexpr static const NODE type = T;	// Node Type
+	static const inline std::set<std::string> privateSchemas = { "information_schema", "pg_catalog", "pg_toast"};
 
 public:
 
@@ -69,7 +72,7 @@ public:
 	std::string getName() const { return nodeName; }
 
 	template<typename S>
-	void printRecursive(S selected) const 
+	void printRecursive(S selected, std::ostringstream& outBuf, bool hidePrivate, int& cursor) const 
 	{
 
 		static_assert(std::is_same_v<S, std::string&> || std::is_same_v<S, const char*>
@@ -90,18 +93,25 @@ public:
 				}
 		}();
 
-		std::clog << color::STRUCTURE << head << color::RESET;
+		if (privateSchemas.count(nodeName) && hidePrivate)
+			return;
+
+		outBuf << color::STRUCTURE << head << color::RESET;
 
 		if (nodeName.compare(selected) == 0)
-			std::clog << color::SELECTED << nodeName << color::RESET;
+		{
+			auto buffString = outBuf.str();
+			cursor = std::count(buffString.begin(), buffString.end(), '\n');
+			outBuf << color::SELECTED << nodeName << color::RESET;
+		}
 		else
-			std::clog << nodeName;
+			outBuf << nodeName;
 
-		std::clog << std::endl;
+		outBuf << std::endl;
 
 		for (auto const& c : children)
 		{
-			c.second.printRecursive(selected);
+			c.second.printRecursive(selected, outBuf, hidePrivate, cursor);
 		}
 	};
 

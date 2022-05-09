@@ -35,7 +35,7 @@
 
 int main(int argc, char** argv)
 {
-
+    std::ios_base::sync_with_stdio(false);
     auto conn = query::connect(CONNECT_QUERY);
 
     DBmanager man(conn);
@@ -50,6 +50,7 @@ int main(int argc, char** argv)
     pr.printTable(res);
     */
 
+   
     for (;;)
     {
         auto c =_getch();
@@ -58,8 +59,6 @@ int main(int argc, char** argv)
 
         if (c == 27)
             break;
-
-        std::cout << c << std::endl;
         man.handleKeyboard(c);
     }
 

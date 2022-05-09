@@ -47,7 +47,6 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	printSep(nFields);
 	printBlank(nFields);
 
-	stream.flushBuf();
 
 	//Print Fields
 
@@ -55,8 +54,6 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	{
 		printRow(i, nFields, res);
 
-		if (i % 4 == 0)
-			stream.flushBuf();
 	}
 
 	//Build Footer
@@ -220,6 +217,21 @@ void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 
 }
 
+void CLprinter::setPos(int x, int y) {
+
+	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	GetConsoleScreenBufferInfo(CLprinter::getHandle(), &csbiInfo);
+	csbiInfo.dwCursorPosition.X = x;
+	csbiInfo.dwCursorPosition.Y = y;
+	SetConsoleCursorPosition(CLprinter::getHandle(), csbiInfo.dwCursorPosition);
+}
+
+std::pair<int, int> CLprinter::getPos()
+{
+	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	GetConsoleScreenBufferInfo(CLprinter::getHandle(), &csbiInfo);
+	return std::pair<int, int>(csbiInfo.dwCursorPosition.X, csbiInfo.dwCursorPosition.Y);
+}
 
 const HANDLE CLprinter::hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 

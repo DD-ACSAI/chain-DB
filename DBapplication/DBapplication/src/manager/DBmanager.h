@@ -33,7 +33,7 @@ class DBmanager
 {
 public:
 	
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(2, 0, 0)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(0, 0, 0), curPos(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
@@ -64,13 +64,13 @@ public:
 
 		for (auto const& schema : schemas)
 		{
-			auto query = query::string_format<char const*>("SELECT * FROM information_schema.tables WHERE table_schema = '%s';", schema.c_str());
+			auto query = query::string_format<char const*>("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s';", schema.c_str());
 			query::atomicQuery(query.c_str(), res, connection);
 			query::queryRes extract(res);
 
 			for (lint i = 0; i < extract.rows; ++i)
 			{
-				auto tname = PQgetvalue(res, i, 2);
+				auto tname = PQgetvalue(res, i, 0);
 				root[schema].addChildren(tname);
 			}
 
@@ -85,13 +85,26 @@ public:
 
 #endif // 
 
+		setHide(false);
+
 		std::cout << "recursive print on ROOT node" << std::endl << std::endl;
 		printFS();
+		CLprinter::setPos(0, 0);
 
+	}
+
+	void setHide(bool state)
+	{
+		isHidingPrivate = state;
+		bounds.first = 3 * state;
+		bounds.second = root.getChildren().size() - 1;
+		std::get<1>(selected) = bounds.first;
 	}
 
 	void printFS()
 	{
+
+		std::system("CLS");
 		auto sel = std::string("");
 		switch ( std::get<0>(selected) )
 		{
@@ -108,7 +121,9 @@ public:
 			assert(false);
 		}
 
-		root.printRecursive(sel);
+		root.printRecursive(sel, outBuf, isHidingPrivate, curPos);
+		std::cout << outBuf.str(); outBuf.str(std::string());
+
 	}
 
 	void handleKeyboard(char code)
@@ -118,7 +133,9 @@ public:
 		case DBcontext::DIR_TREE:
 			switch (code)
 			{
-
+			case H_KEY:
+				setHide(!isHidingPrivate);
+				break;
 			case W_KEY:
 			case UP_KEY:
 				switch (std::get<0>(selected))
@@ -126,7 +143,8 @@ public:
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::max(0, std::get<1>(selected) - 1);
+					std::get<1>(selected) = std::max(bounds.first, std::get<1>(selected) - 1);
+					std::get<2>(selected) = 0;
 					break;
 				case 2:
 					std::get<2>(selected) = std::max(0, std::get<2>(selected) - 1);
@@ -146,10 +164,11 @@ public:
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::min(static_cast<int>(root.getChildren().size()), std::get<1>(selected) + 1);
+					std::get<1>(selected) = std::min(bounds.second, std::get<1>(selected) + 1);
+					std::get<2>(selected) = 0;
 					break;
 				case 2:
-					std::get<2>(selected) = std::min(static_cast<int>(root[std::get<1>(selected)].getChildren().size()), std::get<2>(selected) + 1);
+					std::get<2>(selected) = std::min(static_cast<int>(root[std::get<1>(selected)].getChildren().size()) - 1, std::get<2>(selected) + 1);
 					break;
 				default:
 					break;
@@ -163,6 +182,7 @@ public:
 				break;
 			}
 			printFS();
+			CLprinter::setPos(0, std::max(0, curPos - 10));
 			break;
 		case DBcontext::TABLE_VIEW:
 			std::cerr << "context unimplemented!" << std::endl;
@@ -184,6 +204,10 @@ private:
 	PGresult* res;
 	DBptr<PGconn> conn;
 	CLprinter printUtil;
+	std::ostringstream outBuf;
 	std::tuple<uint16_t, uint16_t, uint16_t> selected;
+	std::pair<int, int> bounds;
 	static DBcontext context;
+	bool isHidingPrivate;
+	int curPos;
 };
