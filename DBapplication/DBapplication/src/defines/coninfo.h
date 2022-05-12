@@ -33,4 +33,3 @@
 #endif // USER
 
 #define CONNECT_QUERY DBSTRING PWSTR USERSTR
-
