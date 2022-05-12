@@ -356,3 +356,5 @@ MigrationBackup/
 
 # Wouldn't want to get all of that compilation bullshittery
 *.pdf
+
+db_data/
