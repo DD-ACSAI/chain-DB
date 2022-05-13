@@ -129,7 +129,7 @@ public:
 
 	}
 
-	void handleKeyboard(char code)
+	void handleKeyboard(int code)
 	{
 		switch (context)
 		{
