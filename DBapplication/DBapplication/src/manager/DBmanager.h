@@ -184,6 +184,12 @@ public:
 			default:
 				break;
 			}
+			if (bounds.first > bounds.second)
+			{
+				std::system("CLS");
+				std::cout << "No non-system tables in this Database!" << std::endl;
+				break;
+			}
 			printFS();
 			CLprinter::setPos(0, std::max(0, curPos - 10));
 			break;
