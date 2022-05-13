@@ -11,6 +11,8 @@ constexpr auto LEFT_KEY = 1200;
 constexpr auto DOWN_KEY = 1280;
 constexpr auto RIGHT_KEY = 1232;
 constexpr auto ENTER_KEY = 13;
+constexpr auto ESC_KEY = 27;
+
 
 static inline int parseKey(int c)
 {

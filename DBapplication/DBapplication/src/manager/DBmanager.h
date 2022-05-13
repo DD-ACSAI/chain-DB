@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <string>
 #include <vector>
+#include <array>
 #include <utility>
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
@@ -93,16 +94,33 @@ public:
 		PQfinish(conn);
 	}
 
-	void setState(DBcontext state)
+	void setState(DBcontext state) //Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
 	{
-		switch (state)	//Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
+		
+		switch (state) //Trigger a set of changes based on the incoming state
 		{
 		case DBcontext::DIR_TREE:
 			CLprinter::hideCursor(false);
+
 			break;
 		case DBcontext::TABLE_VIEW:
+		{
+			CLprinter::hideCursor(false);
+			currTab.tabSchema = root[std::get<1>(selected_dir)].getName();
+			currTab.tabName = root[currTab.tabSchema][std::get<2>(selected_dir)].getName();
+
+			query::atomicQuery(std::string("SELECT COUNT(*) FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
+			query::queryRes extract(res);
+
+			std::stringstream temp(PQgetvalue(extract.result, 0, 0));
+			temp >> currTab.rowCount;
+
+
+			std::cout << currTab.rowCount;
 			break;
+		}
 		case DBcontext::SCHEMA_VIEW:
+			CLprinter::hideCursor(false);
 			break;
 		case DBcontext::QUERY_TOOL:
 			break;
@@ -110,6 +128,7 @@ public:
 			break;
 		}
 		context = state;
+
 	}
 
 	void setHide(bool state)
@@ -145,6 +164,21 @@ public:
 
 	}
 
+	void printTableView() const
+	{
+		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
+
+		std::cout << std::endl << " ";
+
+		for (std::size_t i = 0; i < phrases.size(); ++i)
+		{
+			if (i == currTab.selected_opt)
+				std::cout << "(" << i << ") " << color::SELECTED << phrases[i] << color::RESET << std::endl << ' ';
+			else 
+				std::cout << "(" << i << ") " << phrases[i] << std::endl << ' ';
+		}
+	}
+
 	void refreshScreen()
 	{
 		std::system("CLS");
@@ -159,7 +193,8 @@ public:
 			break;
 		case DBcontext::TABLE_VIEW:
 			printUtil.updateHeader("Table View");
-			//TODO
+			printUtil.printHeader();
+			printTableView();
 			break;
 		case DBcontext::SCHEMA_VIEW:
 			printUtil.updateHeader("Schema View");
@@ -175,7 +210,7 @@ public:
 		}
 	}
 
-	void handleKeyboard(int code)
+	void handleKeyboard(int code)		//Please DO NOT look at this thing unless needed :)
 	{
 		switch (context)
 		{
@@ -266,10 +301,34 @@ public:
 				std::cout << "No non-system tables in this Database!" << std::endl;
 				break;
 			}
-			
+			refreshScreen();
 			break;
 		case DBcontext::TABLE_VIEW:
-			std::cerr << "context unimplemented!" << std::endl;
+			switch (code)
+			{
+			case W_KEY:
+			case UP_KEY:
+				currTab.selected_opt = std::min(0, currTab.selected_opt - 1);
+				refreshScreen();
+				break;
+			case S_KEY:
+			case DOWN_KEY:
+				currTab.selected_opt = std::max(1, currTab.selected_opt + 1);
+				refreshScreen();
+				break;
+			case ENTER_KEY:
+				if (currTab.selected_opt == 0)
+				{
+					query::atomicQuery(std::string("SELECT * FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
+					printUtil.printTable(res);
+					PQclear(res);
+				}
+				break;
+			case ESC_KEY:
+				setState(DBcontext::DIR_TREE);
+				refreshScreen();
+				break;
+			}
 			break;
 		case DBcontext::SCHEMA_VIEW:
 			std::cerr << "context unimplemented!" << std::endl;
@@ -281,10 +340,23 @@ public:
 			std::cerr << "context unhandled!" << std::endl;
 			break;
 		}
-		refreshScreen();
+		
 	}
 
 private:
+	struct tabViewAttr {
+	public:
+		uint16_t selected_opt;
+		std::string tabName;
+		std::string tabSchema;
+
+		int rowCount;
+		int recordSize;
+		long long int recordBytes;
+
+		tabViewAttr() : tabName("NULL"), tabSchema("NULL"), selected_opt(0), rowCount(0), recordSize(0), recordBytes(0) {}
+	};
+
 	Dbnode<NODE::ROOT> root;
 	PGresult* res;
 	PGconn* conn;
@@ -295,4 +367,5 @@ private:
 	static DBcontext context;
 	bool isHidingPrivate;
 	int curPos;
+	tabViewAttr currTab;
 };

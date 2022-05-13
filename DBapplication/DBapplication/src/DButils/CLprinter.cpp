@@ -54,10 +54,7 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	//Print Fields
 
 	for (unsigned int i = 0; i < nRows; ++i)
-	{
 		printRow(i, nFields, res);
-
-	}
 
 	//Build Footer
 
@@ -172,7 +169,7 @@ CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(updateHeader
 
 void inline CLprinter::printTop(uint64_t nFields)
 {
-	stream << "\n Query Output: \n" << color::STRUCTURE << ascii(201);
+	stream << "\n Query Output: \n " << color::STRUCTURE << ascii(201);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -186,7 +183,7 @@ void inline CLprinter::printTop(uint64_t nFields)
 
 void inline CLprinter::printBottom(uint64_t nFields)
 {
-	stream << '\n' << color::STRUCTURE << ascii(200);
+	stream << "\n " << color::STRUCTURE << ascii(200);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -201,7 +198,7 @@ void inline CLprinter::printBottom(uint64_t nFields)
 void inline CLprinter::printSep(uint64_t nFields)
 {
 
-	stream << '\n' << color::STRUCTURE << ascii(204);
+	stream << "\n " << color::STRUCTURE << ascii(204);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -214,7 +211,7 @@ void inline CLprinter::printSep(uint64_t nFields)
 
 void inline CLprinter::printBlank(uint64_t nFields)
 {
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 	for (unsigned int c = 0; c < nFields; ++c)
 	{
 		stream << std::string(biguint(parameters.maxcellsize) + biguint(parameters.padding), ' ') << ascii(186);
@@ -225,7 +222,7 @@ void inline CLprinter::printBlank(uint64_t nFields)
 
 void CLprinter::printFields()
 {
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 	for (auto& str : fieldNames)
 	{
 		str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
@@ -249,7 +246,7 @@ void CLprinter::printFields()
 void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 {
 
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 
 	for (unsigned int j = 0; j < nFields; ++j)
 	{
