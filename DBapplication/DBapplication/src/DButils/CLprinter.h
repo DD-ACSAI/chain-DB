@@ -12,6 +12,8 @@ class CLprinter
 {
 public:
 	void printTable(PGresult*& res, uint64_t maxRow = UINT64_MAX);
+	std::string updateHeader(std::string const& context) const;
+	void printHeader() const { std::cout << header; }
 
 	void setPadding(int16_t padSize);
 	int16_t getPadding() const { return parameters.padding; }
@@ -24,6 +26,7 @@ public:
 	static HANDLE getHandle() { return hConsole; }
 	static void setPos(int x, int y);
 	static std::pair<int, int> getPos();
+	static void hideCursor(bool option);
 
 private:
 
@@ -44,14 +47,27 @@ private:
 		void inline replaceChar(std::string const& str) { stream.seekp( -static_cast<int>(str.size()), stream.cur); stream << str; }
 		void inline replaceChar(char ch) { stream.seekp(-1, stream.cur); stream << ch; }
 
-
-		
 		// Voodoo? voodoo.
 		inline std::ostream& operator<<(std::string const& str) { stream << str; return stream; }
 		inline std::ostream& operator<<(char c) { stream << c; return stream; }
 
 	private:
 		std::stringstream stream;
+	};
+
+	struct winAttr
+	{
+	public:
+		uint32_t cols;
+		uint32_t rows;
+
+		explicit winAttr(const HANDLE h)
+		{
+			CONSOLE_SCREEN_BUFFER_INFO csbi;
+			GetConsoleScreenBufferInfo(h, &csbi);
+			cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+			rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+		}
 	};
 
 	void printTop(uint64_t nFields);
@@ -63,6 +79,8 @@ private:
 
 
 	static const HANDLE hConsole;
+	winAttr windowAttr;
+	std::string header;
 	outStream stream;
 
 };

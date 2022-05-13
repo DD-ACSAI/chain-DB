@@ -31,7 +31,7 @@ enum class DBcontext : char {
 class DBmanager
 {
 public:
-	
+
 	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(0, 0, 0), curPos(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
@@ -39,6 +39,8 @@ public:
 		using lint = int64_t;
 
 		std::vector<std::string> schemas;
+
+		setState(DBcontext::DIR_TREE);
 
 		{	// First query scope (frees locals at the end)
 			query::atomicQuery("SELECT schema_name FROM information_schema.schemata;", res, connection);
@@ -58,7 +60,6 @@ public:
 				std::cout << schemas.at(i) << std::endl;
 #endif
 			}
-			PQclear(res);
 		}
 
 		for (auto const& schema : schemas)
@@ -78,7 +79,6 @@ public:
 			std::cout << "listing tables for schema " << schema << ": " << std::endl;
 			printUtil.printTable(res);
 #endif	
-			PQclear(res);
 		}
 
 		setHide(false);
@@ -95,6 +95,24 @@ public:
 		PQfinish(conn);
 	}
 
+	void setState(DBcontext state)
+	{
+		switch (state)	//Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
+		{
+		case DBcontext::DIR_TREE:
+			CLprinter::hideCursor(false);
+			break;
+		case DBcontext::TABLE_VIEW:
+			break;
+		case DBcontext::SCHEMA_VIEW:
+			break;
+		case DBcontext::QUERY_TOOL:
+			break;
+		default:
+			break;
+		}
+		context = state;
+	}
 
 	void setHide(bool state)
 	{

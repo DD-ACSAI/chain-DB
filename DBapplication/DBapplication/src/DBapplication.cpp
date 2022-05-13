@@ -39,12 +39,17 @@ int main(int argc, char** argv)
     ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
     SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
+    CLprinter printUtil;
+
+    printUtil.printHeader();
+
     bool choice;
-    std::cout << "Do you want to manually input your credentials?\n (0) Yes\n (1) No \n";
+    std::cout << "Do you want to manually input your credentials?\n (0) Yes\n (1) No \n: ";
     choice = _getch() - '0';
     std::system("CLS");
 
     std::string connect_query;
+    connect_query.reserve(128);
 
     if (!choice)
     {
