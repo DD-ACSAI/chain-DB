@@ -44,9 +44,6 @@
     <ClInclude Include="src\manager\dbhierarchy\Dbnode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\DButils\DBpointers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\defines\DBkeys.h">
       <Filter>Header Files</Filter>
     </ClInclude>

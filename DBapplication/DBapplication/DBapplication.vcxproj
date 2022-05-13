@@ -177,7 +177,6 @@
     <ClCompile Include="src\manager\DBmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\DButils\DBpointers.h" />
     <ClInclude Include="src\defines\DBkeys.h" />
     <ClInclude Include="src\manager\dbhierarchy\Dbnode.h" />
     <ClInclude Include="src\manager\DBmanager.h" />

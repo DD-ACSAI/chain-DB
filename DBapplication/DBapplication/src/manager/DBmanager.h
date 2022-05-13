@@ -6,7 +6,6 @@
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
 #include "../DButils/CLprinter.h"
-#include "../DButils/DBpointers.h"
 #include <cstdint>
 
 // Yes, you heard that right, no crosscompat!
@@ -59,7 +58,7 @@ public:
 				std::cout << schemas.at(i) << std::endl;
 #endif
 			}
-
+			PQclear(res);
 		}
 
 		for (auto const& schema : schemas)
@@ -78,12 +77,9 @@ public:
 #ifdef _DEBUG
 			std::cout << "listing tables for schema " << schema << ": " << std::endl;
 			printUtil.printTable(res);
-#endif
+#endif	
+			PQclear(res);
 		}
-		 
-#ifdef _DEBUG
-
-#endif // 
 
 		setHide(false);
 
@@ -92,6 +88,13 @@ public:
 		CLprinter::setPos(0, 0);
 
 	}
+
+	~DBmanager()
+	{
+		PQclear(res);
+		PQfinish(conn);
+	}
+
 
 	void setHide(bool state)
 	{
@@ -202,7 +205,7 @@ public:
 private:
 	Dbnode<NODE::ROOT> root;
 	PGresult* res;
-	DBptr<PGconn> conn;
+	PGconn* conn;
 	CLprinter printUtil;
 	std::ostringstream outBuf;
 	std::tuple<uint16_t, uint16_t, uint16_t> selected;
