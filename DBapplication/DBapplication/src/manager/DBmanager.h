@@ -82,9 +82,7 @@ public:
 		}
 
 		setHide(false);
-
-		std::cout << "recursive print on ROOT node" << std::endl << std::endl;
-		printFS();
+		refreshScreen();
 		CLprinter::setPos(0, 0);
 
 	}
@@ -125,7 +123,6 @@ public:
 	void printFS()
 	{
 
-		std::system("CLS");
 		auto sel = std::string("");
 		switch ( std::get<0>(selected) )
 		{
@@ -145,6 +142,36 @@ public:
 		root.printRecursive(sel, outBuf, isHidingPrivate, curPos);
 		std::cout << outBuf.str(); outBuf.str(std::string());
 
+	}
+
+	void refreshScreen()
+	{
+		std::system("CLS");
+		
+		switch (context)
+		{
+		case DBcontext::DIR_TREE:
+			printUtil.updateHeader("DB Directory Tree");
+			printUtil.printHeader();
+			printFS();
+			CLprinter::setPos(0, std::max(0, curPos - 10));
+			break;
+		case DBcontext::TABLE_VIEW:
+			printUtil.updateHeader("Table View");
+			//TODO
+			break;
+		case DBcontext::SCHEMA_VIEW:
+			printUtil.updateHeader("Schema View");
+			//TODO
+			break;
+		case DBcontext::QUERY_TOOL:
+			printUtil.updateHeader("Query Tool");
+			//TODO
+			break;
+		default:
+			assert("Invalid State");
+			break;
+		}
 	}
 
 	void handleKeyboard(int code)
@@ -197,7 +224,22 @@ public:
 				break;
 			case D_KEY:
 			case RIGHT_KEY:
-				std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+				switch (std::get<0>(selected))
+				{
+				case 0:
+					if (root.getChildren().size() == 0)
+						break;
+					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					break;
+				case 1:
+					if (root[std::get<1>(selected)].getChildren().size() == 0)
+						break;
+					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					break;
+				case 2:
+					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					break;
+				}
 				break;
 			default:
 				break;
@@ -208,8 +250,7 @@ public:
 				std::cout << "No non-system tables in this Database!" << std::endl;
 				break;
 			}
-			printFS();
-			CLprinter::setPos(0, std::max(0, curPos - 10));
+			
 			break;
 		case DBcontext::TABLE_VIEW:
 			std::cerr << "context unimplemented!" << std::endl;
@@ -224,6 +265,7 @@ public:
 			std::cerr << "context unhandled!" << std::endl;
 			break;
 		}
+		refreshScreen();
 	}
 
 private:
