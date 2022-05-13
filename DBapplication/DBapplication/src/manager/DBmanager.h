@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <string>
 #include <vector>
+#include <array>
 #include <utility>
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
@@ -31,14 +32,16 @@ enum class DBcontext : char {
 class DBmanager
 {
 public:
-	
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(0, 0, 0), curPos(0)
+
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 
 		std::vector<std::string> schemas;
+
+		setState(DBcontext::DIR_TREE);
 
 		{	// First query scope (frees locals at the end)
 			query::atomicQuery("SELECT schema_name FROM information_schema.schemata;", res, connection);
@@ -58,7 +61,6 @@ public:
 				std::cout << schemas.at(i) << std::endl;
 #endif
 			}
-			PQclear(res);
 		}
 
 		for (auto const& schema : schemas)
@@ -78,13 +80,10 @@ public:
 			std::cout << "listing tables for schema " << schema << ": " << std::endl;
 			printUtil.printTable(res);
 #endif	
-			PQclear(res);
 		}
 
 		setHide(false);
-
-		std::cout << "recursive print on ROOT node" << std::endl << std::endl;
-		printFS();
+		refreshScreen();
 		CLprinter::setPos(0, 0);
 
 	}
@@ -95,30 +94,66 @@ public:
 		PQfinish(conn);
 	}
 
+	void setState(DBcontext state) //Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
+	{
+		
+		switch (state) //Trigger a set of changes based on the incoming state
+		{
+		case DBcontext::DIR_TREE:
+			CLprinter::hideCursor(false);
+
+			break;
+		case DBcontext::TABLE_VIEW:
+		{
+			CLprinter::hideCursor(false);
+			currTab.tabSchema = root[std::get<1>(selected_dir)].getName();
+			currTab.tabName = root[currTab.tabSchema][std::get<2>(selected_dir)].getName();
+
+			query::atomicQuery(std::string("SELECT COUNT(*) FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
+			query::queryRes extract(res);
+
+			std::stringstream temp(PQgetvalue(extract.result, 0, 0));
+			temp >> currTab.rowCount;
+
+
+			std::cout << currTab.rowCount;
+			break;
+		}
+		case DBcontext::SCHEMA_VIEW:
+			CLprinter::hideCursor(false);
+			break;
+		case DBcontext::QUERY_TOOL:
+			break;
+		default:
+			break;
+		}
+		context = state;
+
+	}
 
 	void setHide(bool state)
 	{
 		isHidingPrivate = state;
 		bounds.first = 3 * state;
 		bounds.second = root.getChildren().size() - 1;
-		std::get<1>(selected) = bounds.first;
+		std::get<1>(selected_dir) = bounds.first;
+		std::get<2>(selected_dir) = 0;
 	}
 
 	void printFS()
 	{
 
-		std::system("CLS");
 		auto sel = std::string("");
-		switch ( std::get<0>(selected) )
+		switch ( std::get<0>(selected_dir) )
 		{
 		case 0:
 			sel = root.getName();
 			break;
 		case 1:
-			sel = root[std::get<1>(selected)].getName();
+			sel = root[std::get<1>(selected_dir)].getName();
 			break;
 		case 2:
-			sel = root[std::get<1>(selected)][std::get<2>(selected)].getName();
+			sel = root[std::get<1>(selected_dir)][std::get<2>(selected_dir)].getName();
 			break;
 		default:
 			assert(false);
@@ -129,28 +164,89 @@ public:
 
 	}
 
-	void handleKeyboard(int code)
+	void printTableView() const
+	{
+		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
+
+		std::cout << std::endl << " ";
+
+		for (std::size_t i = 0; i < phrases.size(); ++i)
+		{
+			if (i == currTab.selected_opt)
+				std::cout << "(" << i << ") " << color::SELECTED << phrases[i] << color::RESET << std::endl << ' ';
+			else 
+				std::cout << "(" << i << ") " << phrases[i] << std::endl << ' ';
+		}
+	}
+
+	void refreshScreen()
+	{
+		std::system("CLS");
+		
+		switch (context)
+		{
+		case DBcontext::DIR_TREE:
+			printUtil.updateHeader("DB Directory Tree");
+			printUtil.printHeader();
+			printFS();
+			CLprinter::setPos(0, std::max(0, curPos - 10));
+			break;
+		case DBcontext::TABLE_VIEW:
+			printUtil.updateHeader("Table View");
+			printUtil.printHeader();
+			printTableView();
+			break;
+		case DBcontext::SCHEMA_VIEW:
+			printUtil.updateHeader("Schema View");
+			//TODO
+			break;
+		case DBcontext::QUERY_TOOL:
+			printUtil.updateHeader("Query Tool");
+			//TODO
+			break;
+		default:
+			assert("Invalid State");
+			break;
+		}
+	}
+
+	void handleKeyboard(int code)		//Please DO NOT look at this thing unless needed :)
 	{
 		switch (context)
 		{
 		case DBcontext::DIR_TREE:
 			switch (code)
 			{
+			case ENTER_KEY:
+				switch (std::get<0>(selected_dir))
+				{
+				case 0:
+					break;
+				case 1:
+					setState(DBcontext::SCHEMA_VIEW);
+					break;
+				case 2:
+					setState(DBcontext::TABLE_VIEW);
+					break;
+				default:
+					break;
+				}
+				break;
 			case H_KEY:
 				setHide(!isHidingPrivate);
 				break;
 			case W_KEY:
 			case UP_KEY:
-				switch (std::get<0>(selected))
+				switch (std::get<0>(selected_dir))
 				{
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::max(bounds.first, std::get<1>(selected) - 1);
-					std::get<2>(selected) = 0;
+					std::get<1>(selected_dir) = std::max(bounds.first, std::get<1>(selected_dir) - 1);
+					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected) = std::max(0, std::get<2>(selected) - 1);
+					std::get<2>(selected_dir) = std::max(0, std::get<2>(selected_dir) - 1);
 					break;
 				default:
 					break;
@@ -158,20 +254,20 @@ public:
 				break;
 			case A_KEY:
 			case LEFT_KEY:
-				std::get<0>(selected) = std::max(0, std::get<0>(selected) - 1);
+				std::get<0>(selected_dir) = std::max(0, std::get<0>(selected_dir) - 1);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				switch (std::get<0>(selected))
+				switch (std::get<0>(selected_dir))
 				{
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::min(bounds.second, std::get<1>(selected) + 1);
-					std::get<2>(selected) = 0;
+					std::get<1>(selected_dir) = std::min(bounds.second, std::get<1>(selected_dir) + 1);
+					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected) = std::min(static_cast<int>(root[std::get<1>(selected)].getChildren().size()) - 1, std::get<2>(selected) + 1);
+					std::get<2>(selected_dir) = std::min(static_cast<int>(root[std::get<1>(selected_dir)].getChildren().size()) - 1, std::get<2>(selected_dir) + 1);
 					break;
 				default:
 					break;
@@ -179,7 +275,22 @@ public:
 				break;
 			case D_KEY:
 			case RIGHT_KEY:
-				std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+				switch (std::get<0>(selected_dir))
+				{
+				case 0:
+					if (root.getChildren().size() == 0)
+						break;
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					break;
+				case 1:
+					if (root[std::get<1>(selected_dir)].getChildren().size() == 0)
+						break;
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					break;
+				case 2:
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					break;
+				}
 				break;
 			default:
 				break;
@@ -190,11 +301,34 @@ public:
 				std::cout << "No non-system tables in this Database!" << std::endl;
 				break;
 			}
-			printFS();
-			CLprinter::setPos(0, std::max(0, curPos - 10));
+			refreshScreen();
 			break;
 		case DBcontext::TABLE_VIEW:
-			std::cerr << "context unimplemented!" << std::endl;
+			switch (code)
+			{
+			case W_KEY:
+			case UP_KEY:
+				currTab.selected_opt = std::min(0, currTab.selected_opt - 1);
+				refreshScreen();
+				break;
+			case S_KEY:
+			case DOWN_KEY:
+				currTab.selected_opt = std::max(1, currTab.selected_opt + 1);
+				refreshScreen();
+				break;
+			case ENTER_KEY:
+				if (currTab.selected_opt == 0)
+				{
+					query::atomicQuery(std::string("SELECT * FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
+					printUtil.printTable(res);
+					PQclear(res);
+				}
+				break;
+			case ESC_KEY:
+				setState(DBcontext::DIR_TREE);
+				refreshScreen();
+				break;
+			}
 			break;
 		case DBcontext::SCHEMA_VIEW:
 			std::cerr << "context unimplemented!" << std::endl;
@@ -206,17 +340,32 @@ public:
 			std::cerr << "context unhandled!" << std::endl;
 			break;
 		}
+		
 	}
 
 private:
+	struct tabViewAttr {
+	public:
+		uint16_t selected_opt;
+		std::string tabName;
+		std::string tabSchema;
+
+		int rowCount;
+		int recordSize;
+		long long int recordBytes;
+
+		tabViewAttr() : tabName("NULL"), tabSchema("NULL"), selected_opt(0), rowCount(0), recordSize(0), recordBytes(0) {}
+	};
+
 	Dbnode<NODE::ROOT> root;
 	PGresult* res;
 	PGconn* conn;
 	CLprinter printUtil;
 	std::ostringstream outBuf;
-	std::tuple<uint16_t, uint16_t, uint16_t> selected;
+	std::tuple<uint16_t, uint16_t, uint16_t> selected_dir;
 	std::pair<int, int> bounds;
 	static DBcontext context;
 	bool isHidingPrivate;
 	int curPos;
+	tabViewAttr currTab;
 };

@@ -3,7 +3,10 @@
 #include "../defines/clicolors.h"
 #include <cstdint>
 #include <iostream>
+#include <string_view>
 #include <numeric>
+#include <algorithm>
+#include <array>
 
 #define ascii(x)	static_cast<char>(x)
 #define biguint(x)	static_cast<uint64_t>(x)
@@ -51,10 +54,7 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	//Print Fields
 
 	for (unsigned int i = 0; i < nRows; ++i)
-	{
 		printRow(i, nFields, res);
-
-	}
 
 	//Build Footer
 
@@ -66,6 +66,60 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	stream.flushBuf();
 	fieldNames.clear();
 	fieldLen.clear();
+}
+
+
+std::string CLprinter::updateHeader(std::string const& context = "PLACEHOLDER") const
+{
+	constexpr auto tl_corner = ascii(201);
+	constexpr auto tr_corner = ascii(187);
+	constexpr auto hline = ascii(205);
+	constexpr auto vline = ascii(186);
+	constexpr auto bl_corner = ascii(200);
+	constexpr auto br_corner = ascii(188);
+
+	std::stringstream str_build;
+
+	auto w = windowAttr.cols - 2;
+	std::array<std::string, 3> phrases = { "Chain-DB", "PLACEHOLDER", "Loi - Marincione A.Y 2021/2022" };
+	phrases[1] = context;
+
+	auto blankspace = (w - 4) / 3;
+
+	str_build << color::STRUCTURE << tl_corner << std::string(w, hline) << tr_corner << color::RESET << std::endl;
+
+	str_build << color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << std::endl << color::STRUCTURE << vline << color::RESET << "  ";
+
+
+	for (std::size_t indx = 0; indx < phrases.size(); ++indx)
+	{
+		int blank;
+
+		if ((blank = blankspace - phrases[indx].size()) < 0) assert("Not enough space to print header string number " + indx);
+
+		switch (indx)
+		{
+		case 0:
+			str_build << phrases[indx] << std::string(blank, ' ');
+			break;
+		case 1:
+			str_build << std::string(bigint(blank / 2), ' ') << phrases[indx] << std::string(bigint(blank / 2), ' ');
+			break;
+
+		case 2:
+			str_build << std::string(blank, ' ') << phrases[indx];
+			break;
+		}
+	}
+
+
+	str_build << "  " << color::STRUCTURE << vline << color::RESET << std::endl
+		<< color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << std::endl
+		<< color::STRUCTURE << bl_corner << std::string(w, hline) << br_corner << color::RESET << std::endl << std::endl;
+
+
+	return str_build.str();
+
 }
 
 void CLprinter::setPadding(int16_t padSize) {
@@ -99,7 +153,7 @@ void CLprinter::setMaxCellSize(int16_t cellSize)
 	}
 }
 
-CLprinter::CLprinter()
+CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(updateHeader("MAIN MENU"))
 {
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
@@ -115,7 +169,7 @@ CLprinter::CLprinter()
 
 void inline CLprinter::printTop(uint64_t nFields)
 {
-	stream << "\n Query Output: \n" << color::STRUCTURE << ascii(201);
+	stream << "\n Query Output: \n " << color::STRUCTURE << ascii(201);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -129,7 +183,7 @@ void inline CLprinter::printTop(uint64_t nFields)
 
 void inline CLprinter::printBottom(uint64_t nFields)
 {
-	stream << '\n' << color::STRUCTURE << ascii(200);
+	stream << "\n " << color::STRUCTURE << ascii(200);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -144,7 +198,7 @@ void inline CLprinter::printBottom(uint64_t nFields)
 void inline CLprinter::printSep(uint64_t nFields)
 {
 
-	stream << '\n' << color::STRUCTURE << ascii(204);
+	stream << "\n " << color::STRUCTURE << ascii(204);
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
@@ -157,7 +211,7 @@ void inline CLprinter::printSep(uint64_t nFields)
 
 void inline CLprinter::printBlank(uint64_t nFields)
 {
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 	for (unsigned int c = 0; c < nFields; ++c)
 	{
 		stream << std::string(biguint(parameters.maxcellsize) + biguint(parameters.padding), ' ') << ascii(186);
@@ -168,7 +222,7 @@ void inline CLprinter::printBlank(uint64_t nFields)
 
 void CLprinter::printFields()
 {
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 	for (auto& str : fieldNames)
 	{
 		str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
@@ -192,7 +246,7 @@ void CLprinter::printFields()
 void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 {
 
-	stream << '\n' << color::STRUCTURE << ascii(186);
+	stream << "\n " << color::STRUCTURE << ascii(186);
 
 	for (unsigned int j = 0; j < nFields; ++j)
 	{
@@ -213,7 +267,7 @@ void CLprinter::printRow(unsigned int i, uint64_t nFields, PGresult*& res)
 		uint64_t rblank = (blankspace % 2 == 0) ? blankspace / 2 : blankspace / 2 + 1;
 
 		stream << std::string(lblank, ' ') << color::VALUE << str_val << color::VALUE << std::string(rblank, ' ') << color::STRUCTURE << ascii(186) << color::RESET;
-		}
+	}
 
 }
 
@@ -224,6 +278,16 @@ void CLprinter::setPos(int x, int y) {
 	csbiInfo.dwCursorPosition.X = x;
 	csbiInfo.dwCursorPosition.Y = y;
 	SetConsoleCursorPosition(CLprinter::getHandle(), csbiInfo.dwCursorPosition);
+}
+
+void CLprinter::hideCursor(bool option)
+{
+
+	CONSOLE_CURSOR_INFO info;
+	info.dwSize = 100;
+	info.bVisible = option;
+	SetConsoleCursorInfo(CLprinter::getHandle(), &info);
+
 }
 
 std::pair<int, int> CLprinter::getPos()

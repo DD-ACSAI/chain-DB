@@ -152,19 +152,33 @@ static PGconn* connect(const char* const conninfo)
     return conn;
 }
 
+/**
+ * Consumes a PGresult* and wraps it, providing convenient access to a number of it's 
+ * contained attributes and automatically freeing the resource once the struct goes out of
+ * scope.
+ */
 struct queryRes
 {
 public:
     uint64_t fields;
     uint64_t rows;
     bool successful;
+    PGresult* result;
 
-    explicit queryRes(PGresult*& res)
+    explicit queryRes(PGresult*& res) : result(res)
     {
         fields = PQnfields(res);
         rows = PQntuples(res);
         successful = !(statusFailed(PQresultStatus(res)) || res == nullptr);
     }
+
+    ~queryRes()
+    {
+        PQclear(result);
+    }
+
+    explicit queryRes(queryRes const& other) = default;
+    queryRes& operator=(queryRes const&) = default;
 };
 
 /**
