@@ -32,7 +32,7 @@ class DBmanager
 {
 public:
 
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected(0, 0, 0), curPos(0)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
@@ -117,23 +117,24 @@ public:
 		isHidingPrivate = state;
 		bounds.first = 3 * state;
 		bounds.second = root.getChildren().size() - 1;
-		std::get<1>(selected) = bounds.first;
+		std::get<1>(selected_dir) = bounds.first;
+		std::get<2>(selected_dir) = 0;
 	}
 
 	void printFS()
 	{
 
 		auto sel = std::string("");
-		switch ( std::get<0>(selected) )
+		switch ( std::get<0>(selected_dir) )
 		{
 		case 0:
 			sel = root.getName();
 			break;
 		case 1:
-			sel = root[std::get<1>(selected)].getName();
+			sel = root[std::get<1>(selected_dir)].getName();
 			break;
 		case 2:
-			sel = root[std::get<1>(selected)][std::get<2>(selected)].getName();
+			sel = root[std::get<1>(selected_dir)][std::get<2>(selected_dir)].getName();
 			break;
 		default:
 			assert(false);
@@ -181,21 +182,36 @@ public:
 		case DBcontext::DIR_TREE:
 			switch (code)
 			{
+			case ENTER_KEY:
+				switch (std::get<0>(selected_dir))
+				{
+				case 0:
+					break;
+				case 1:
+					setState(DBcontext::SCHEMA_VIEW);
+					break;
+				case 2:
+					setState(DBcontext::TABLE_VIEW);
+					break;
+				default:
+					break;
+				}
+				break;
 			case H_KEY:
 				setHide(!isHidingPrivate);
 				break;
 			case W_KEY:
 			case UP_KEY:
-				switch (std::get<0>(selected))
+				switch (std::get<0>(selected_dir))
 				{
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::max(bounds.first, std::get<1>(selected) - 1);
-					std::get<2>(selected) = 0;
+					std::get<1>(selected_dir) = std::max(bounds.first, std::get<1>(selected_dir) - 1);
+					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected) = std::max(0, std::get<2>(selected) - 1);
+					std::get<2>(selected_dir) = std::max(0, std::get<2>(selected_dir) - 1);
 					break;
 				default:
 					break;
@@ -203,20 +219,20 @@ public:
 				break;
 			case A_KEY:
 			case LEFT_KEY:
-				std::get<0>(selected) = std::max(0, std::get<0>(selected) - 1);
+				std::get<0>(selected_dir) = std::max(0, std::get<0>(selected_dir) - 1);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				switch (std::get<0>(selected))
+				switch (std::get<0>(selected_dir))
 				{
 				case 0:
 					break;
 				case 1:
-					std::get<1>(selected) = std::min(bounds.second, std::get<1>(selected) + 1);
-					std::get<2>(selected) = 0;
+					std::get<1>(selected_dir) = std::min(bounds.second, std::get<1>(selected_dir) + 1);
+					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected) = std::min(static_cast<int>(root[std::get<1>(selected)].getChildren().size()) - 1, std::get<2>(selected) + 1);
+					std::get<2>(selected_dir) = std::min(static_cast<int>(root[std::get<1>(selected_dir)].getChildren().size()) - 1, std::get<2>(selected_dir) + 1);
 					break;
 				default:
 					break;
@@ -224,20 +240,20 @@ public:
 				break;
 			case D_KEY:
 			case RIGHT_KEY:
-				switch (std::get<0>(selected))
+				switch (std::get<0>(selected_dir))
 				{
 				case 0:
 					if (root.getChildren().size() == 0)
 						break;
-					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
 					break;
 				case 1:
-					if (root[std::get<1>(selected)].getChildren().size() == 0)
+					if (root[std::get<1>(selected_dir)].getChildren().size() == 0)
 						break;
-					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
 					break;
 				case 2:
-					std::get<0>(selected) = std::min(2, std::get<0>(selected) + 1);
+					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
 					break;
 				}
 				break;
@@ -274,7 +290,7 @@ private:
 	PGconn* conn;
 	CLprinter printUtil;
 	std::ostringstream outBuf;
-	std::tuple<uint16_t, uint16_t, uint16_t> selected;
+	std::tuple<uint16_t, uint16_t, uint16_t> selected_dir;
 	std::pair<int, int> bounds;
 	static DBcontext context;
 	bool isHidingPrivate;
