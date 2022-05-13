@@ -36,21 +36,44 @@
 int main(int argc, char** argv)
 {
     std::ios_base::sync_with_stdio(false);
-    auto conn = query::connect(CONNECT_QUERY);
+    ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
+    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+    bool choice;
+    std::cout << "Do you want to manually input your credentials?\n (0) Yes\n (1) No \n";
+    choice = _getch() - '0';
+    std::system("CLS");
+
+    std::string connect_query;
+
+    if (!choice)
+    {
+        std::string username, password, dbname;
+
+        std::cout << "Insert DB Name to connect: ";
+        std::cin >> dbname;
+        std::cout << std::endl;
+
+        std::cout << "Insert Username to connect: ";
+        std::cin >> username;
+        std::cout << std::endl;
+
+        std::cout << "Insert Password to connect: ";
+        std::cin >> password;
+        std::cout << std::endl;
+
+        connect_query = "dbname = " + dbname + " password = " + password + " user = " + username;
+    }
+    else
+        connect_query = CONNECT_QUERY;
+
+    std::system("CLS");
+    auto conn = query::connect(connect_query.c_str());
 
     DBmanager man(conn);
     PGresult* res = nullptr;
 
-    ShowWindow(GetConsoleWindow(), SW_MAXIMIZE);
-    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
-    /*
-    query::atomicQuery("SELECT * FROM \"public\".\"People\"", res, conn);
-    CLprinter pr;
-    pr.printTable(res);
-    */
-
-   
     for (;;)
     {
         auto c =_getch();
