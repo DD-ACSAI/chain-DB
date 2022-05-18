@@ -45,7 +45,6 @@ static void beginTransaction(PGconn*& connection)
 
 #endif // DEBUG
         PQclear(res);
-        exit_program(connection);
     }
     PQclear(res);
 }
@@ -66,7 +65,6 @@ static void endTransaction(PGconn*& connection)
 
 #endif
         PQclear(res);
-        exit_program(connection);
     }
     PQclear(res);
 }
@@ -97,7 +95,6 @@ static void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
 #endif // DEBUG
 
         PQclear(res);
-        exit_program(connection);
     }
 }
 

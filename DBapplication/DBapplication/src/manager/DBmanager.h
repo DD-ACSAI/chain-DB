@@ -124,6 +124,7 @@ public:
 			break;
 		}
 		case DBcontext::QUERY_TOOL:
+			handleQueryTool();
 			break;
 		case DBcontext::MAIN_MENU:
 			CLprinter::hideCursor(false);
@@ -189,7 +190,6 @@ public:
 
 	void printMenu() const
 	{
-
 		std::cout << std::endl;
 		for (std::size_t i = 0; i < menu_options.size(); ++i)
 		{
@@ -200,6 +200,37 @@ public:
 		}
 	}
 
+	void handleQueryTool()
+	{
+
+		std::system("CLS");
+
+		printUtil.updateHeader("Query Tool");
+		printUtil.printHeader();
+
+		std::cout << "\n\n Query: ";
+
+		std::string query;
+
+		auto curs_pos = printUtil.getPos();
+
+		for (;;)	//
+		{
+			std::getline(std::cin, query);
+
+			auto target_buff = new char[ 2 * static_cast<int>(query.size()) + 1 ];
+			int error;
+
+			PQescapeStringConn(conn, target_buff, query.c_str(), query.size(), &error);
+
+			query::atomicQuery(target_buff, res, conn);
+			printUtil.printTable(res);
+
+			delete[] target_buff;
+		}
+
+	}
+
 	void refreshScreen()
 	{
 
@@ -208,29 +239,29 @@ public:
 		switch (context)
 		{
 		case DBcontext::DIR_TREE:
+
 			printUtil.updateHeader("DB Directory Tree");
 			printUtil.printHeader();
 			printFS();
 			CLprinter::setPos(0, std::max(0, curPos - 10));
+
 			break;
 		case DBcontext::TABLE_VIEW:
+
 			printUtil.updateHeader("Table View");
 			printUtil.printHeader();
 			printTableView();
+
 			break;
 		case DBcontext::MAIN_MENU:
+
 			printUtil.updateHeader("Main Menu");
 			printUtil.printHeader();
 			printMenu();
-			//TODO
-			break;
-		case DBcontext::QUERY_TOOL:
-			printUtil.updateHeader("Query Tool");
-			printUtil.printHeader();
-			printQueryTool();
-			//TODO
+
 			break;
 		default:
+
 			assert("Invalid State");
 			break;
 		}
@@ -391,8 +422,7 @@ public:
 			refreshScreen();
 			break;
 		case DBcontext::QUERY_TOOL:
-			std::cerr << "context unimplemented!" << std::endl;
-			refreshScreen();
+			//Input here is handled differently in handleKeyboard() 
 			break;
 		default:
 			std::cerr << "context unhandled!" << std::endl;
