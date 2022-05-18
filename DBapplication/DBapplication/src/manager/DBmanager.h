@@ -22,9 +22,9 @@
 
 
 enum class DBcontext : char {
+	MAIN_MENU,
 	DIR_TREE,
 	TABLE_VIEW,
-	SCHEMA_VIEW,
 	QUERY_TOOL
 };
 
@@ -33,15 +33,17 @@ class DBmanager
 {
 public:
 
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0), selected_menu_opt(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 
+		menu_options = { "Show Directory Tree", "Query Tool", "PLACEHOLDER" };
+
 		std::vector<std::string> schemas;
 
-		setState(DBcontext::DIR_TREE);
+		setState(DBcontext::MAIN_MENU);
 
 		{	// First query scope (frees locals at the end)
 			query::atomicQuery("SELECT schema_name FROM information_schema.schemata;", res, connection);
@@ -90,8 +92,10 @@ public:
 
 	~DBmanager()
 	{
+
 		PQclear(res);
 		PQfinish(conn);
+
 	}
 
 	void setState(DBcontext state) //Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
@@ -119,10 +123,10 @@ public:
 			std::cout << currTab.rowCount;
 			break;
 		}
-		case DBcontext::SCHEMA_VIEW:
-			CLprinter::hideCursor(false);
-			break;
 		case DBcontext::QUERY_TOOL:
+			break;
+		case DBcontext::MAIN_MENU:
+			CLprinter::hideCursor(false);
 			break;
 		default:
 			break;
@@ -133,11 +137,13 @@ public:
 
 	void setHide(bool state)
 	{
+
 		isHidingPrivate = state;
 		bounds.first = 3 * state;
 		bounds.second = root.getChildren().size() - 1;
 		std::get<1>(selected_dir) = bounds.first;
 		std::get<2>(selected_dir) = 0;
+
 	}
 
 	void printFS()
@@ -166,6 +172,7 @@ public:
 
 	void printTableView() const
 	{
+
 		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
 
 		std::cout << std::endl << " ";
@@ -177,10 +184,25 @@ public:
 			else 
 				std::cout << "(" << i << ") " << phrases[i] << std::endl << ' ';
 		}
+
+	}
+
+	void printMenu() const
+	{
+
+		std::cout << std::endl;
+		for (std::size_t i = 0; i < menu_options.size(); ++i)
+		{
+			if (i == selected_menu_opt)
+				std::cout << " * " << color::SELECTED << menu_options[i] << color::RESET << std::endl;
+			else
+				std::cout << " * " << menu_options[i] << std::endl;
+		}
 	}
 
 	void refreshScreen()
 	{
+
 		std::system("CLS");
 		
 		switch (context)
@@ -196,22 +218,28 @@ public:
 			printUtil.printHeader();
 			printTableView();
 			break;
-		case DBcontext::SCHEMA_VIEW:
-			printUtil.updateHeader("Schema View");
+		case DBcontext::MAIN_MENU:
+			printUtil.updateHeader("Main Menu");
+			printUtil.printHeader();
+			printMenu();
 			//TODO
 			break;
 		case DBcontext::QUERY_TOOL:
 			printUtil.updateHeader("Query Tool");
+			printUtil.printHeader();
+			printQueryTool();
 			//TODO
 			break;
 		default:
 			assert("Invalid State");
 			break;
 		}
+
 	}
 
 	void handleKeyboard(int code)		//Please DO NOT look at this thing unless needed :)
 	{
+
 		switch (context)
 		{
 		case DBcontext::DIR_TREE:
@@ -223,7 +251,7 @@ public:
 				case 0:
 					break;
 				case 1:
-					setState(DBcontext::SCHEMA_VIEW);
+					setState(DBcontext::MAIN_MENU);
 					break;
 				case 2:
 					setState(DBcontext::TABLE_VIEW);
@@ -231,6 +259,10 @@ public:
 				default:
 					break;
 				}
+				break;
+			case ESC_KEY:
+				setState(DBcontext::MAIN_MENU);
+				refreshScreen();
 				break;
 			case H_KEY:
 				setHide(!isHidingPrivate);
@@ -308,12 +340,12 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				currTab.selected_opt = std::min(0, currTab.selected_opt - 1);
+				currTab.selected_opt = std::max(0, currTab.selected_opt - 1);
 				refreshScreen();
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				currTab.selected_opt = std::max(1, currTab.selected_opt + 1);
+				currTab.selected_opt = std::min(1, currTab.selected_opt + 1);
 				refreshScreen();
 				break;
 			case ENTER_KEY:
@@ -330,11 +362,37 @@ public:
 				break;
 			}
 			break;
-		case DBcontext::SCHEMA_VIEW:
-			std::cerr << "context unimplemented!" << std::endl;
+		case DBcontext::MAIN_MENU:
+			switch (code)
+			{
+			case W_KEY:
+			case UP_KEY:
+				selected_menu_opt = std::max(selected_menu_opt - 1, 0);
+				break;
+			case S_KEY:
+			case DOWN_KEY:
+				selected_menu_opt = std::min(static_cast<int>(menu_options.size() - 1), selected_menu_opt + 1);
+				
+				break;
+			case ENTER_KEY:
+				if (selected_menu_opt == 0)
+				{
+					setState(DBcontext::DIR_TREE);
+				} 
+				else 
+				if (selected_menu_opt == 1)
+				{
+					setState(DBcontext::QUERY_TOOL);
+				}
+			case ESC_KEY:
+				//Find a way to kill the program
+				break;
+			}
+			refreshScreen();
 			break;
 		case DBcontext::QUERY_TOOL:
 			std::cerr << "context unimplemented!" << std::endl;
+			refreshScreen();
 			break;
 		default:
 			std::cerr << "context unhandled!" << std::endl;
@@ -368,4 +426,7 @@ private:
 	bool isHidingPrivate;
 	int curPos;
 	tabViewAttr currTab;
+
+	std::vector<std::string> menu_options;
+	uint16_t selected_menu_opt;
 };

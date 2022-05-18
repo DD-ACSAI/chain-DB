@@ -69,7 +69,8 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 }
 
 
-std::string CLprinter::updateHeader(std::string const& context = "PLACEHOLDER") const
+
+std::string CLprinter::getHeader(std::string const& context = "PLACEHOLDER")
 {
 	constexpr auto tl_corner = ascii(201);
 	constexpr auto tr_corner = ascii(187);
@@ -122,6 +123,7 @@ std::string CLprinter::updateHeader(std::string const& context = "PLACEHOLDER") 
 
 }
 
+
 void CLprinter::setPadding(int16_t padSize) {
 	try
 	{
@@ -153,7 +155,7 @@ void CLprinter::setMaxCellSize(int16_t cellSize)
 	}
 }
 
-CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(updateHeader("MAIN MENU"))
+CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(getHeader("MAIN MENU"))
 {
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
