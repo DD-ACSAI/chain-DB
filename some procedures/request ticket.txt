@@ -1,0 +1,17 @@
+CREATE OR REPLACE PROCEDURE public."MakeTicket"(
+	IN my_vehicle "Vehicle",
+	IN my_depot "Depot")
+LANGUAGE 'plpgsql'
+AS $BODY$
+BEGIN
+    IF NOT EXISTS (
+      SELECT *
+      FROM "Ticket"
+      WHERE NOT "Ticket"."isExpired" AND "Ticket"."VehicleCode" = "my_vehicle"."ID"
+      ) THEN
+        INSERT INTO "Ticket"("PlaceCode", "VehicleCode", "TimeIn") VALUES ("my_depot"."PlaceCode", "my_vehicle"."ID", CURRENT_TIMESTAMP);
+    END IF;
+END
+$BODY$;
+ALTER PROCEDURE public."MakeTicket"("Vehicle", "Depot")
+    OWNER TO postgres;
