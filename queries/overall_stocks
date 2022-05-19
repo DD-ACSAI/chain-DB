@@ -1,0 +1,3 @@
+SELECT * 
+FROM "Quantity_per_company" as cpy
+WHERE cpy."company" = 1

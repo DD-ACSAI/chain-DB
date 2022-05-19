@@ -1,0 +1,17 @@
+-- Count assets
+
+SELECT ret1."ID", ret1.NDep, ret2.NFact, ret2.NWare, ret2.NStore, ret3.NCars, ret3.NPlanes, ret3.NShips
+FROM (
+	SELECT "Company"."ID", COUNT("Depot") as NDep
+	FROM "Company" JOIN "Depot" ON ("Company"."ID" = "Depot"."CompanyCode")
+	GROUP BY "Company"."ID"
+) as ret1, (
+	SELECT "Company"."ID", COUNT("CenterOfInterest"."Type"='Factory') as NFact, COUNT("CenterOfInterest"."Type"='Warehouse') as NWare, COUNT("CenterOfInterest"."Type"='Store') as NStore
+	FROM "Company" JOIN "CenterOfInterest" ON ("Company"."ID" = "CenterOfInterest"."CompanyCode")
+	GROUP BY "Company"."ID"
+) as ret2, (
+	SELECT "Company"."ID", COUNT("Vehicle"."Type"='Car') as NCars, COUNT("Vehicle"."Type"='Plane') as NPlanes, COUNT("Vehicle"."Type"='Ship') as NShips
+	FROM "Company" JOIN "Vehicle" ON ("Vehicle"."Owner" = "Company"."ID")
+	GROUP BY "Company"."ID"
+) as ret3
+WHERE ret1."ID" = ret2."ID" and ret2."ID" = ret3."ID"
