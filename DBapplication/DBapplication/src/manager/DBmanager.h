@@ -207,9 +207,9 @@ public:
 
 
 
-	std::string parseQuery(std::string_view query_str, std::unordered_set<std::string> const& tokens ) const
+	std::string parseQuery(std::string_view query_str) const
 	{
-
+		auto const& tokens = DBmanager::SQLtokens;
 		std::vector<std::string> split_str;
 		std::stringstream out_str;
 		
@@ -245,8 +245,6 @@ public:
 	void handleQueryTool()
 	{
 
-		std::unordered_set<std::string> SQLtokens = { "SELECT", "FROM", "WHERE", "ORDER BY", "GROUP BY", "SUM", "AVG" };
-
 		std::system("CLS");
 
 		printUtil.updateHeader("Query Tool");
@@ -281,7 +279,7 @@ public:
 				query.push_back(static_cast<char>(c));
 				std::cout << static_cast<char>(c);
 
-				auto out_str = parseQuery(query, SQLtokens);
+				auto out_str = parseQuery(query);
 				if (out_str != query)
 				{
 					std::cout << "\r" << " Query: " << out_str;
@@ -302,7 +300,7 @@ public:
 
 			PQescapeStringConn(conn, target_buff, query.c_str(), query.size(), &error);
 
-			std::cout << std::endl;
+			std::cout << std::endl << std::endl;
 
 			if(query::atomicQuery(target_buff, res, conn))
 				printUtil.printTable(res);
@@ -545,6 +543,7 @@ private:
 	int curPos;
 	tabViewAttr currTab;
 
+	static const std::unordered_set<std::string> SQLtokens;
 	std::vector<std::string> menu_options;
 	uint16_t selected_menu_opt;
 };
