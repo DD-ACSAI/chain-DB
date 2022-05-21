@@ -13,9 +13,10 @@ class CLprinter
 public:
 	void printTable(PGresult*& res, uint64_t maxRow = UINT64_MAX);
 	void updateHeader(std::string const& context){
-		header = getHeader(context);
+		header = createHeader(context);
 	};
-	std::string getHeader(std::string const& context);
+	std::string createHeader(std::string const& context) const;
+	std::string const& getHeader() const { return header; }
 	void printHeader() const { std::cout << header; }
 
 	void setPadding(int16_t padSize);

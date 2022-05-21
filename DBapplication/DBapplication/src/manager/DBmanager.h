@@ -1,13 +1,17 @@
 #pragma once
 #define NOMINMAX
 #include <string>
+#include <algorithm>
+#include <cctype>
 #include <vector>
 #include <array>
 #include <utility>
+#include <unordered_set>
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
 #include "../DButils/CLprinter.h"
 #include <cstdint>
+#include <conio.h>
 
 // Yes, you heard that right, no crosscompat!
 #ifdef _WIN32
@@ -19,6 +23,7 @@
 
 #include <iostream>
 #include "../defines/DBkeys.h"
+#include "../defines/clicolors.h"
 
 
 enum class DBcontext : char {
@@ -100,7 +105,7 @@ public:
 
 	void setState(DBcontext state) //Make relevant changes to the UI and to other class attributes in order to make it correctly reflect the current state.
 	{
-		
+		context = state;
 		switch (state) //Trigger a set of changes based on the incoming state
 		{
 		case DBcontext::DIR_TREE:
@@ -124,6 +129,7 @@ public:
 			break;
 		}
 		case DBcontext::QUERY_TOOL:
+			CLprinter::hideCursor(true);
 			handleQueryTool();
 			break;
 		case DBcontext::MAIN_MENU:
@@ -132,7 +138,6 @@ public:
 		default:
 			break;
 		}
-		context = state;
 
 	}
 
@@ -200,35 +205,117 @@ public:
 		}
 	}
 
+
+
+	std::string parseQuery(std::string_view query_str) const
+	{
+		auto const& tokens = DBmanager::SQLtokens;
+		std::vector<std::string> split_str;
+		std::stringstream out_str;
+		
+		size_t last = 0;
+		size_t next = 0; 
+		while ((next = query_str.find(' ', last)) != std::string::npos)
+		{ 
+			split_str.emplace_back(query_str.substr(last, next - last));
+			last = next + 1; 
+		} 
+		split_str.emplace_back(query_str.substr(last));
+
+		size_t i = 0;
+		for (auto const& tkn : split_str)
+		{
+			std::string lwr = tkn;
+			std::transform(tkn.begin(), tkn.end(), lwr.begin(),
+				[](char c) { return std::toupper(c); });
+
+			if (tokens.find(lwr) != tokens.end())
+				out_str << color::FIELD << split_str[i++] << color::RESET;
+			else
+				out_str << split_str[i++];
+			out_str << " ";
+		}
+
+		auto str = out_str.str();
+		str.erase(str.size() - 1, 1);
+
+		return str;
+	}
+
 	void handleQueryTool()
 	{
 
 		std::system("CLS");
 
 		printUtil.updateHeader("Query Tool");
-		printUtil.printHeader();
-
-		std::cout << "\n\n Query: ";
-
 		std::string query;
 
-		auto curs_pos = printUtil.getPos();
-
-		for (;;)	//
+		for (;;)
 		{
-			std::getline(std::cin, query);
+			printUtil.printHeader();
+			std::cout << std::endl << std::endl << " Query: ";
+
+			for (;;) {
+				auto c = _getch();
+				
+				c = parseKey(c);
+				
+				if (c == ENTER_KEY)
+				{
+					break;
+				}
+				else if (c == DELETE_KEY)
+				{
+					if (!query.empty())
+					{
+						query.pop_back();
+						std::cout << "\b \b";
+					}
+					continue;
+				}
+				else if (c == ESC_KEY)
+					goto EXIT;
+				else if (c == UP_KEY || c == LEFT_KEY || c == RIGHT_KEY || c == DOWN_KEY)
+					continue;
+				query.push_back(static_cast<char>(c));
+				std::cout << static_cast<char>(c);
+
+				auto out_str = parseQuery(query);
+				if (out_str != query)
+				{
+					std::cout << "\r" << " Query: " << out_str;
+				}
+					
+			}
+
+			if (query.empty())
+			{
+				std::cerr << "  Empty query received, please, at least type something!" << std::endl;
+				_getch();
+				std::system("CLS");
+				continue;
+			}
 
 			auto target_buff = new char[ 2 * static_cast<int>(query.size()) + 1 ];
 			int error;
 
 			PQescapeStringConn(conn, target_buff, query.c_str(), query.size(), &error);
 
-			query::atomicQuery(target_buff, res, conn);
-			printUtil.printTable(res);
+			std::cout << std::endl << std::endl;
+
+			if(query::atomicQuery(target_buff, res, conn))
+				printUtil.printTable(res);
 
 			delete[] target_buff;
+			query.clear();
+
+			_getch();
+			std::system("CLS");
 		}
 
+	EXIT:
+		setState(DBcontext::MAIN_MENU);
+		refreshScreen();
 	}
 
 	void refreshScreen()
@@ -457,6 +544,7 @@ private:
 	int curPos;
 	tabViewAttr currTab;
 
+	static const std::unordered_set<std::string> SQLtokens;
 	std::vector<std::string> menu_options;
 	uint16_t selected_menu_opt;
 };

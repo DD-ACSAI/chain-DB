@@ -35,6 +35,8 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	uint64_t nFields = PQnfields(res);
 	uint64_t nRows = PQntuples(res);
 
+	if (nFields == 0) return;
+
 	nRows = (nRows > maxRow) ? maxRow : nRows;
 
 	for (int i = 0; i < nFields; ++i)
@@ -70,7 +72,7 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 
 
 
-std::string CLprinter::getHeader(std::string const& context = "PLACEHOLDER")
+std::string CLprinter::createHeader(std::string const& context = "PLACEHOLDER") const
 {
 	constexpr auto tl_corner = ascii(201);
 	constexpr auto tr_corner = ascii(187);
@@ -95,20 +97,22 @@ std::string CLprinter::getHeader(std::string const& context = "PLACEHOLDER")
 	for (std::size_t indx = 0; indx < phrases.size(); ++indx)
 	{
 		int blank;
+		auto phrase = phrases[indx];
 
 		if ((blank = blankspace - phrases[indx].size()) < 0) assert("Not enough space to print header string number " + indx);
 
 		switch (indx)
 		{
 		case 0:
-			str_build << phrases[indx] << std::string(blank, ' ');
+			str_build << phrase << std::string(blank, ' ');
 			break;
 		case 1:
-			str_build << std::string(bigint(blank / 2), ' ') << phrases[indx] << std::string(bigint(blank / 2), ' ');
+			str_build << std::string(bigint(blank / 2), ' ') << phrase << std::string(bigint(blank / 2), ' ');
+			if (phrase.size() % 2 == 0) str_build << ' ';
 			break;
 
 		case 2:
-			str_build << std::string(blank, ' ') << phrases[indx];
+			str_build << std::string(blank, ' ') << phrase;
 			break;
 		}
 	}
@@ -155,12 +159,12 @@ void CLprinter::setMaxCellSize(int16_t cellSize)
 	}
 }
 
-CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(getHeader("MAIN MENU"))
+CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(createHeader("MAIN MENU"))
 {
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
 
-	constexpr const int16_t MAXCELLSIZE = 12;
+	constexpr const int16_t MAXCELLSIZE = 16;
 	constexpr const int16_t PADDING = 4;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");
