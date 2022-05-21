@@ -256,7 +256,7 @@ public:
 			std::cout << std::endl << std::endl << " Query: ";
 
 			for (;;) {
-				char c = _getch();
+				auto c = _getch();
 				
 				c = parseKey(c);
 				
@@ -275,7 +275,8 @@ public:
 				}
 				else if (c == ESC_KEY)
 					goto EXIT;
-				
+				else if (c == UP_KEY || c == LEFT_KEY || c == RIGHT_KEY || c == DOWN_KEY)
+					continue;
 				query.push_back(static_cast<char>(c));
 				std::cout << static_cast<char>(c);
 
