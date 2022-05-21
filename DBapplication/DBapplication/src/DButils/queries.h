@@ -32,7 +32,7 @@ namespace query
  *
  * \param connection    Pointer to a Database Connection.
  */
-static void beginTransaction(PGconn*& connection)
+static bool beginTransaction(PGconn*& connection)
 {
     PGresult* res = PQexec(connection, "BEGIN");
 
@@ -45,8 +45,10 @@ static void beginTransaction(PGconn*& connection)
 
 #endif // DEBUG
         PQclear(res);
+        return false;
     }
     PQclear(res);
+    return true;
 }
 
 /**
@@ -54,7 +56,7 @@ static void beginTransaction(PGconn*& connection)
  *
  * \param connection    Pointer to a Database Connection.
  */
-static void endTransaction(PGconn*& connection)
+static bool endTransaction(PGconn*& connection)
 {
     PGresult* res = PQexec(connection, "END");
     if (statusFailed(PQresultStatus(res)) || res == nullptr)
@@ -65,8 +67,10 @@ static void endTransaction(PGconn*& connection)
 
 #endif
         PQclear(res);
+        return false;
     }
     PQclear(res);
+    return true;
 }
 
 
@@ -78,7 +82,7 @@ static void endTransaction(PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-static void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
+static bool executeQuery(const char* query, PGresult*& res, PGconn*& connection)
 {
     res = PQexec(connection, query);
 
@@ -95,7 +99,9 @@ static void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
 #endif // DEBUG
 
         PQclear(res);
+        return false;
     }
+    return true;
 }
 
 /**
@@ -108,11 +114,16 @@ static void executeQuery(const char* query, PGresult*& res, PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-static void atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
+static bool atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
 {
-    beginTransaction(connection);
-    executeQuery(query, res, connection);
+    bool status = false;
+    if (beginTransaction(connection))
+    {
+        status = executeQuery(query, res, connection);
+    }
+
     endTransaction(connection);
+    return status;
 }
 
 
@@ -128,11 +139,9 @@ static PGconn* connect(const char* const conninfo)
 
     if (PQstatus(conn) != CONNECTION_OK)
     {
-#ifdef _DEBUG
 
         std::cerr << PQerrorMessage(conn) << std::endl;
 
-#endif _DEBUG
         exit_program(conn);
     }
 

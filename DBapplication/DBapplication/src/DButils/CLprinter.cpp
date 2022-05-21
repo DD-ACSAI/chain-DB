@@ -35,6 +35,8 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	uint64_t nFields = PQnfields(res);
 	uint64_t nRows = PQntuples(res);
 
+	if (nFields == 0) return;
+
 	nRows = (nRows > maxRow) ? maxRow : nRows;
 
 	for (int i = 0; i < nFields; ++i)
@@ -160,7 +162,7 @@ CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(getHeader("M
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
 
-	constexpr const int16_t MAXCELLSIZE = 12;
+	constexpr const int16_t MAXCELLSIZE = 16;
 	constexpr const int16_t PADDING = 4;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");
