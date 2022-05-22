@@ -193,7 +193,6 @@ void inline CLprinter::printBottom(uint64_t nFields)
 
 	for (uint64_t i = 0; i < nFields; ++i)
 	{
-
 		stream << std::string(bigint(parameters.maxcellsize) + bigint(parameters.padding), ascii(205)) << ascii(202);
 	}
 

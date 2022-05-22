@@ -4,33 +4,55 @@
 #include <memory>
 #include "WKQuery.h"
 #include "..\..\DButils\queries.h"
+#include <sstream>
 
 template <std::size_t S>
 class Procedure : public WKQuery
 {
+
+	using string_tup = std::pair<std::string, std::string>;
+
 public:
-	explicit Procedure(std::string_view proc_name)
+	explicit Procedure(std::string_view proc_name, std::array<string_tup, S> const& argnames) : argn(argnames)
 	{
 		name = proc_name;
-		
+
+		std::stringstream strbuild;
+
+		strbuild << color::PROCEDURE << name << "(";
+
+		for (auto const& name : argn)
+		{
+			strbuild << name.first << " : " << name.second << ", ";
+		}
+		strbuild << "\b\b  \b\b)" << color::RESET;
+
+		parsed_name = strbuild.str();
 	}
 
-	explicit Procedure(const char* proc_name)
+	explicit Procedure(const char* proc_name, std::array<string_tup, S> const& argnames) : argn(argnames)
 	{
 		name = std::string(proc_name);
 
+		std::stringstream strbuild;
+
+		strbuild << color::PROCEDURE << name << "(";
+
+		for (auto const& name : argn)
+		{
+			strbuild << name.first << " : " << name.second << ", ";
+		}
+		strbuild << "\b\b  \b\b)" << color::RESET;
+
+		parsed_name = strbuild.str();
 	}
 
 	void setParams(std::array<std::string, S> const& params)
 	{
-		size_t i = 0;
-		for (auto const& p : params)
-		{
-			args[i++] = p;
-		}
+		args = params;
 	}
 
-	std::array<std::string, S> const& getParamNames()
+	std::array<string_tup, S> const& getParamNames()
 	{
 		return argn;
 	}
@@ -46,17 +68,40 @@ public:
 
 	void execute(PGresult*& res, PGconn*& conn) override 
 	{
-		std::string query("CALL \"" + name + "\"(");
+
+		std::cout << "Executing Procedure " << parsed_name << ", Awaiting user input : \n\n";
+
+
+		size_t i = 0;
+		for (auto const& name : argn)
+		{
+			std::string arg("");
+			std::cout << " " << name.first << " : " << name.second << ": ";
+			std::cin >> arg;
+			args[i++] = arg;
+		}
+		std::cout << std::endl;
+
+		std::stringstream query;
+		query << "CALL \"" + name + "\"(";
 
 		for (auto const& par : args)
 		{
-			query = query + par + ", ";
+			query << par + ", ";
 		}
 
-		query += ");";
+		query << ")";
 
-		query::atomicQuery(query.c_str(), res, conn);
+		std::string query_built = query.str();
+		query_built.erase(query_built.size() - 3, 2);
 
+		auto target_buff = new char[2 * static_cast<int>(query_built.size()) + 1];
+		int error;
+
+		PQescapeStringConn(conn, target_buff, query_built.c_str(), query_built.size(), &error);
+
+		if (query::atomicQuery(target_buff, res, conn))
+			std::cout << "\nProcedure \"" << parsed_name << "\" correctly executed!" << std::endl;
 	}
 
 
@@ -64,7 +109,8 @@ public:
 
 private:
 
-	std::array<std::string, S> argn;
+	std::array<string_tup, S> argn;
 	std::array<std::string, S> args;
+	std::string parsed_name;
 };
 

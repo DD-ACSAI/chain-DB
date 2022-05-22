@@ -12,12 +12,14 @@ public:
 	{
 		name = query_name;
 		content = query_content;
+		parsed_query = query::parseQuery(content);
 	}
 
 	Query(const char* query_name, const char* query_content)
 	{
 		name = query_name;
 		content = query_content;
+		parsed_query = query::parseQuery(content);
 	}
 
 	bool hasArgs() override {
@@ -26,8 +28,13 @@ public:
 
 	void execute(PGresult*& res, PGconn*& conn) override
 	{
+		std::cout << std::endl << "Executing Query " << color::FIELD << name << color::RESET << ": " << std::endl << "\t" << parsed_query << std::endl;
 		query::atomicQuery(content.c_str(), res, conn);
+
+		printer.printTable(res);
 	}
 
+private:
+	std::string parsed_query;
 };
 

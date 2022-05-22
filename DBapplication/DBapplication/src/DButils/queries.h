@@ -2,9 +2,12 @@
 #include "libpq-fe.h"
 #include <stdint.h>
 
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <algorithm>
+#include "../defines/clicolors.h"
 
 inline void exit_program(PGconn* connection)
 {
@@ -186,6 +189,45 @@ public:
     explicit queryRes(queryRes const& other) = default;
     queryRes& operator=(queryRes const&) = default;
 };
+
+std::unordered_set<std::string> const static SQLtokens = { "SELECT", "FROM", "WHERE", "ORDER BY", "GROUP BY", "SUM", "AVG", "DROP", "SCHEMA", "CASCADE", "CALL", "AS", "JOIN", "ON" };
+
+
+std::string static parseQuery(std::string_view query_str)
+{
+
+    auto const& tokens = query::SQLtokens;
+    std::stringstream out_str;
+    std::vector<std::string> split_str;
+
+    size_t last = 0;
+    size_t next = 0;
+    while ((next = query_str.find(' ', last)) != std::string::npos)
+    {
+        split_str.emplace_back(query_str.substr(last, next - last));
+        last = next + 1;
+    }
+    split_str.emplace_back(query_str.substr(last));
+
+    size_t i = 0;
+    for (auto const& tkn : split_str)
+    {
+        std::string lwr = tkn;
+        std::transform(tkn.begin(), tkn.end(), lwr.begin(),
+            [](char c) { return std::toupper(c); });
+
+        if (tokens.find(lwr) != tokens.end())
+            out_str << color::FIELD << split_str[i++] << color::RESET;
+        else
+            out_str << split_str[i++];
+        out_str << " ";
+    }
+
+    auto str = out_str.str();
+    str.erase(str.size() - 1, 1);
+
+    return str;
+}
 
 /**
  * Formats a string in a "pythonic" way.

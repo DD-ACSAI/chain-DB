@@ -41,6 +41,7 @@ enum class DBcontext : char {
 	QUERY_EXEC
 };
 
+#define AS_STR(X) std::string(X)
 
 class DBmanager
 {
@@ -56,13 +57,16 @@ public:
 
 		std::vector<std::string> schemas(6);
 
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket"));
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Add Connection"));
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Shipment"));
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Route"));
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Shipment"));
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Inject Route"));
-		well_knowns.emplace_back(std::make_unique<Query>("Generic Query", "SELECT * FROM public.\"Company\""));
+		using string_tup = std::pair<std::string, std::string>;
+		
+
+		std::array<string_tup, 2> argn{
+			std::make_pair(AS_STR("Vehicle Code"), AS_STR("int")),
+			std::make_pair(AS_STR("Depot Code"), AS_STR("int"))
+		};
+
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket", argn));
+		well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
 
 		setState(DBcontext::MAIN_MENU);
 
@@ -228,42 +232,6 @@ public:
 		}
 	}
 
-
-	std::string parseQuery(std::string_view query_str) const
-	{
-		auto const& tokens = DBmanager::SQLtokens;
-		std::vector<std::string> split_str;
-		std::stringstream out_str;
-		
-		size_t last = 0;
-		size_t next = 0; 
-		while ((next = query_str.find(' ', last)) != std::string::npos)
-		{ 
-			split_str.emplace_back(query_str.substr(last, next - last));
-			last = next + 1; 
-		} 
-		split_str.emplace_back(query_str.substr(last));
-
-		size_t i = 0;
-		for (auto const& tkn : split_str)
-		{
-			std::string lwr = tkn;
-			std::transform(tkn.begin(), tkn.end(), lwr.begin(),
-				[](char c) { return std::toupper(c); });
-
-			if (tokens.find(lwr) != tokens.end())
-				out_str << color::FIELD << split_str[i++] << color::RESET;
-			else
-				out_str << split_str[i++];
-			out_str << " ";
-		}
-
-		auto str = out_str.str();
-		str.erase(str.size() - 1, 1);
-
-		return str;
-	}
-
 	void handleQueryTool()
 	{
 
@@ -302,7 +270,7 @@ public:
 				query.push_back(static_cast<char>(c));
 				std::cout << static_cast<char>(c);
 
-				auto out_str = parseQuery(query);
+				auto out_str = query::parseQuery(query);
 				if (out_str != query)
 				{
 					std::cout << "\r" << " Query: " << out_str;
@@ -369,9 +337,11 @@ public:
 				goto EXIT;
 				break;
 			case ENTER_KEY:
-				execWK(selected_wk);
+				std::cout << std::endl;
+				well_knowns[selected_wk]->execute(res, conn);
 				_getch();
-			case DOWN_KEY:
+				break;
+			case DOWN_KEY:	
 			case S_KEY:
 				selected_wk = std::min(well_knowns.size() - 1, selected_wk + 1);
 				break;
@@ -386,7 +356,8 @@ public:
 		}
 
 	EXIT:
-		return;
+		setState(DBcontext::MAIN_MENU);
+		refreshScreen();
 	}
 
 	void execWK(size_t indx)
@@ -558,6 +529,7 @@ public:
 			case ENTER_KEY:
 				if (currTab.selected_opt == 0)
 				{
+					refreshScreen();
 					query::atomicQuery(std::string("SELECT * FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
 					printUtil.printTable(res);
 					PQclear(res);
@@ -640,7 +612,6 @@ private:
 	int curPos;
 	tabViewAttr currTab;
 
-	static const std::unordered_set<std::string> SQLtokens;
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
 	size_t selected_wk;
 
