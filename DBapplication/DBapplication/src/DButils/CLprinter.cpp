@@ -286,7 +286,7 @@ void CLprinter::setPos(int x, int y) {
 	SetConsoleCursorPosition(CLprinter::getHandle(), csbiInfo.dwCursorPosition);
 }
 
-void CLprinter::hideCursor(bool option)
+void CLprinter::showCursor(bool option)
 {
 
 	CONSOLE_CURSOR_INFO info;

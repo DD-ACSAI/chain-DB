@@ -30,7 +30,7 @@ public:
 	static HANDLE getHandle() { return hConsole; }
 	static void setPos(int x, int y);
 	static std::pair<int, int> getPos();
-	static void hideCursor(bool option);
+	static void showCursor(bool option);
 
 private:
 

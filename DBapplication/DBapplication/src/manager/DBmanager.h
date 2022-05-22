@@ -30,7 +30,9 @@ enum class DBcontext : char {
 	MAIN_MENU,
 	DIR_TREE,
 	TABLE_VIEW,
-	QUERY_TOOL
+	QUERY_TOOL,
+	WK_QUERIES,
+	QUERY_EXEC
 };
 
 
@@ -109,12 +111,12 @@ public:
 		switch (state) //Trigger a set of changes based on the incoming state
 		{
 		case DBcontext::DIR_TREE:
-			CLprinter::hideCursor(false);
+			CLprinter::showCursor(false);
 
 			break;
 		case DBcontext::TABLE_VIEW:
 		{
-			CLprinter::hideCursor(false);
+			CLprinter::showCursor(false);
 			currTab.tabSchema = root[std::get<1>(selected_dir)].getName();
 			currTab.tabName = root[currTab.tabSchema][std::get<2>(selected_dir)].getName();
 
@@ -129,11 +131,17 @@ public:
 			break;
 		}
 		case DBcontext::QUERY_TOOL:
-			CLprinter::hideCursor(true);
+			CLprinter::showCursor(true);
 			handleQueryTool();
 			break;
 		case DBcontext::MAIN_MENU:
-			CLprinter::hideCursor(false);
+			CLprinter::showCursor(false);
+			break;
+		case DBcontext::QUERY_EXEC:
+			CLprinter::showCursor(false);
+			break;
+		case DBcontext::WK_QUERIES:
+			CLprinter::showCursor(false);
 			break;
 		default:
 			break;
