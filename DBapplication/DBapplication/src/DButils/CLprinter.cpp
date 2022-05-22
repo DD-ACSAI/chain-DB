@@ -164,8 +164,8 @@ CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(createHeader
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
 
-	constexpr const int16_t MAXCELLSIZE = 16;
-	constexpr const int16_t PADDING = 4;
+	constexpr const int16_t MAXCELLSIZE = 12;
+	constexpr const int16_t PADDING = 2;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");
 	static_assert(PADDING % 2 == 0, "PADDING must be even!");
