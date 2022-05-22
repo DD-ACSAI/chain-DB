@@ -172,15 +172,12 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Procedure.cpp" />
-    <ClCompile Include="src\manager\queries\Query.cpp" />
-    <ClCompile Include="src\manager\queries\WKQuery.cpp" />
     <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
     <ClCompile Include="src\manager\DBmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Procedure.h" />
+    <ClInclude Include="src\manager\queries\Procedure.h" />
     <ClInclude Include="src\manager\queries\Query.h" />
     <ClInclude Include="src\manager\queries\WKQuery.h" />
     <ClInclude Include="src\defines\DBkeys.h" />

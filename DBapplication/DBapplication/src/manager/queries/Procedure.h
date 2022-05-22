@@ -9,10 +9,16 @@ template <std::size_t S>
 class Procedure : public WKQuery
 {
 public:
-	Procedure(std::string_view proc_name)
+	explicit Procedure(std::string_view proc_name)
 	{
 		name = proc_name;
 		
+	}
+
+	explicit Procedure(const char* proc_name)
+	{
+		name = std::string(proc_name);
+
 	}
 
 	void setParams(std::array<std::string, S> const& params)
@@ -20,7 +26,7 @@ public:
 		size_t i = 0;
 		for (auto const& p : params)
 		{
-			args[i++] = p
+			args[i++] = p;
 		}
 	}
 
@@ -34,14 +40,17 @@ public:
 		return args;
 	}
 
+	bool hasArgs() override {
+		return true;
+	}
 
 	void execute(PGresult*& res, PGconn*& conn) override 
 	{
-		std::string query("CALL \"" + proc_name + "\"(");
+		std::string query("CALL \"" + name + "\"(");
 
 		for (auto const& par : args)
 		{
-			query = query + args + ", ";
+			query = query + par + ", ";
 		}
 
 		query += ");";
@@ -50,9 +59,8 @@ public:
 
 	}
 
-	void setArgs()
 
-	std::string_view getContent() override { assert(false, "Procedures are content-less"); }
+	std::string_view getContent() override { assert(false, "Procedures are content-less"); return " "; }
 
 private:
 

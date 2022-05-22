@@ -2,7 +2,7 @@
 #define NOMINMAX
 #include <string>
 #include <algorithm>
-#include <cctype>
+
 #include <vector>
 #include <array>
 #include <utility>
@@ -11,7 +11,6 @@
 #include "../DButils/queries.h"
 #include "../DButils/CLprinter.h"
 #include <cstdint>
-#include <conio.h>
 
 // Yes, you heard that right, no crosscompat!
 #ifdef _WIN32
@@ -20,8 +19,15 @@
 #error "No compatibility, sorry!"
 #endif
 
+//Well known Queries Headers
+#include "queries/WKQuery.h"
+#include "queries/Procedure.h"
+#include "queries/Query.h"
 
+// I\O stuff
 #include <iostream>
+#include <cctype>
+#include <conio.h>
 #include "../defines/DBkeys.h"
 #include "../defines/clicolors.h"
 
@@ -40,15 +46,23 @@ class DBmanager
 {
 public:
 
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0), selected_menu_opt(0)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0), selected_menu_opt(0), selected_wk(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 
-		menu_options = { "Show Directory Tree", "Query Tool", "PLACEHOLDER" };
+		menu_options = { "Show Directory Tree", "Query Tool", "Well Known Queries" };
 
-		std::vector<std::string> schemas;
+		std::vector<std::string> schemas(6);
+
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket"));
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Add Connection"));
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Shipment"));
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Route"));
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Shipment"));
+		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Inject Route"));
+		well_knowns.emplace_back(std::make_unique<Query>("Generic Query", "SELECT * FROM public.\"Company\""));
 
 		setState(DBcontext::MAIN_MENU);
 
@@ -142,6 +156,7 @@ public:
 			break;
 		case DBcontext::WK_QUERIES:
 			CLprinter::showCursor(false);
+			handleWK();
 			break;
 		default:
 			break;
@@ -201,7 +216,7 @@ public:
 
 	}
 
-	void printMenu() const
+	void printMainMenu() const
 	{
 		std::cout << std::endl;
 		for (std::size_t i = 0; i < menu_options.size(); ++i)
@@ -212,7 +227,6 @@ public:
 				std::cout << " * " << menu_options[i] << std::endl;
 		}
 	}
-
 
 
 	std::string parseQuery(std::string_view query_str) const
@@ -326,6 +340,60 @@ public:
 		refreshScreen();
 	}
 
+	void handleWK()
+	{
+
+		printUtil.updateHeader("Well-Known Queries and Procedures");
+
+		for (;;)
+		{
+			std::system("CLS");
+			printUtil.printHeader();
+
+			std::cout << "Well Known Queries: " << std::endl << std::endl;
+
+			size_t i = 0;
+			for (auto const& wk : well_knowns)
+			{
+				if (i++ == selected_wk)
+					std::cout << " * " << color::SELECTED << wk->getName() << color::RESET << std::endl;
+				else
+					std::cout << " * " << wk->getName() << std::endl;
+			}
+
+			auto c = parseKey(_getch());
+
+			switch (c)
+			{
+			case ESC_KEY:
+				goto EXIT;
+				break;
+			case ENTER_KEY:
+				execWK(selected_wk);
+				_getch();
+			case DOWN_KEY:
+			case S_KEY:
+				selected_wk = std::min(well_knowns.size() - 1, selected_wk + 1);
+				break;
+			case UP_KEY:
+			case W_KEY:
+				selected_wk = std::max((size_t)0, selected_wk - 1);
+				break;
+			default:
+				break;
+			}
+
+		}
+
+	EXIT:
+		return;
+	}
+
+	void execWK(size_t indx)
+	{
+		std::cout << "I am executing: " << indx << std::endl;
+	}
+
 	void refreshScreen()
 	{
 
@@ -352,7 +420,7 @@ public:
 
 			printUtil.updateHeader("Main Menu");
 			printUtil.printHeader();
-			printMenu();
+			printMainMenu();
 
 			break;
 		default:
@@ -363,9 +431,22 @@ public:
 
 	}
 
+	/**
+	* \brief Main method of DBManager that handles the keyboard input based on which state the application is currently in.
+	* 
+	*	The switch here is extremely long-winded and suffers in readability, however, once it is broken down in it's individual 
+	*	component what it does is fairly understandable and can't frankly be done in a different way except perhaps breaking it 
+	*	down into a number of different methods/utility functions to reduce the number of code in a single method, however,
+	*	we refrain from doing this due to the time constraints on the project.
+	*	
+	*	The method is made up of two nested switches, the first one determines in which context (or state) the application is currently in,
+	*	the second one handles a number of keypresses in a way that depends on the context.
+	* 
+	* \param int code: An integer encoding the user input.
+	* \relates DBkeys.h
+	*/
 	void handleKeyboard(int code)		//Please DO NOT look at this thing unless needed :)
 	{
-
 		switch (context)
 		{
 		case DBcontext::DIR_TREE:
@@ -404,7 +485,7 @@ public:
 					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected_dir) = std::max(0, std::get<2>(selected_dir) - 1);
+					std::get<2>(selected_dir) = std::max((size_t)0, std::get<2>(selected_dir) - 1);
 					break;
 				default:
 					break;
@@ -412,7 +493,7 @@ public:
 				break;
 			case A_KEY:
 			case LEFT_KEY:
-				std::get<0>(selected_dir) = std::max(0, std::get<0>(selected_dir) - 1);
+				std::get<0>(selected_dir) = std::max((size_t)0, std::get<0>(selected_dir) - 1);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
@@ -425,7 +506,7 @@ public:
 					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected_dir) = std::min(static_cast<int>(root[std::get<1>(selected_dir)].getChildren().size()) - 1, std::get<2>(selected_dir) + 1);
+					std::get<2>(selected_dir) = std::min(root[std::get<1>(selected_dir)].getChildren().size() - 1, std::get<2>(selected_dir) + 1);
 					break;
 				default:
 					break;
@@ -438,15 +519,15 @@ public:
 				case 0:
 					if (root.getChildren().size() == 0)
 						break;
-					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
 					break;
 				case 1:
 					if (root[std::get<1>(selected_dir)].getChildren().size() == 0)
 						break;
-					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
 					break;
 				case 2:
-					std::get<0>(selected_dir) = std::min(2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
 					break;
 				}
 				break;
@@ -466,12 +547,12 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				currTab.selected_opt = std::max(0, currTab.selected_opt - 1);
+				currTab.selected_opt = std::max((size_t)0, currTab.selected_opt - 1);
 				refreshScreen();
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				currTab.selected_opt = std::min(1, currTab.selected_opt + 1);
+				currTab.selected_opt = std::min((size_t)1, currTab.selected_opt + 1);
 				refreshScreen();
 				break;
 			case ENTER_KEY:
@@ -493,11 +574,11 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				selected_menu_opt = std::max(selected_menu_opt - 1, 0);
+				selected_menu_opt = std::max(selected_menu_opt - 1, (size_t)0);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				selected_menu_opt = std::min(static_cast<int>(menu_options.size() - 1), selected_menu_opt + 1);
+				selected_menu_opt = std::min(menu_options.size() - 1, selected_menu_opt + 1);
 				
 				break;
 			case ENTER_KEY:
@@ -505,11 +586,15 @@ public:
 				{
 					setState(DBcontext::DIR_TREE);
 				} 
-				else 
-				if (selected_menu_opt == 1)
+				else if (selected_menu_opt == 1)
 				{
 					setState(DBcontext::QUERY_TOOL);
 				}
+				else if (selected_menu_opt == 2)
+				{
+					setState(DBcontext::WK_QUERIES);
+				}
+
 			case ESC_KEY:
 				//Find a way to kill the program
 				break;
@@ -518,6 +603,9 @@ public:
 			break;
 		case DBcontext::QUERY_TOOL:
 			//Input here is handled differently in handleKeyboard() 
+			break;
+		case DBcontext::WK_QUERIES:
+			//Input here is handled differently in handleWK() 
 			break;
 		default:
 			std::cerr << "context unhandled!" << std::endl;
@@ -529,7 +617,7 @@ public:
 private:
 	struct tabViewAttr {
 	public:
-		uint16_t selected_opt;
+		size_t selected_opt;
 		std::string tabName;
 		std::string tabSchema;
 
@@ -545,14 +633,17 @@ private:
 	PGconn* conn;
 	CLprinter printUtil;
 	std::ostringstream outBuf;
-	std::tuple<uint16_t, uint16_t, uint16_t> selected_dir;
-	std::pair<int, int> bounds;
+	std::tuple<size_t, size_t, size_t> selected_dir;
+	std::pair<size_t, size_t> bounds;
 	static DBcontext context;
 	bool isHidingPrivate;
 	int curPos;
 	tabViewAttr currTab;
 
 	static const std::unordered_set<std::string> SQLtokens;
+	std::vector<std::unique_ptr<WKQuery>> well_knowns;
+	size_t selected_wk;
+
 	std::vector<std::string> menu_options;
-	uint16_t selected_menu_opt;
+	size_t selected_menu_opt;
 };

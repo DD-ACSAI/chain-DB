@@ -14,6 +14,16 @@ public:
 		content = query_content;
 	}
 
+	Query(const char* query_name, const char* query_content)
+	{
+		name = query_name;
+		content = query_content;
+	}
+
+	bool hasArgs() override {
+		return false;
+	}
+
 	void execute(PGresult*& res, PGconn*& conn) override
 	{
 		query::atomicQuery(content.c_str(), res, conn);

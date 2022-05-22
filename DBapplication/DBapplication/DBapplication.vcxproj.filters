@@ -24,15 +24,6 @@
     <ClCompile Include="src\manager\DBmanager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\manager\queries\WKQuery.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\manager\queries\Query.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Procedure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\defines\coninfo.h">
@@ -62,7 +53,7 @@
     <ClInclude Include="src\manager\queries\Query.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Procedure.h">
+    <ClInclude Include="src\manager\queries\Procedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

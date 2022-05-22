@@ -13,9 +13,11 @@ public:
 	virtual std::string_view getName() { return name; }
 	virtual std::string_view getContent() { return content; }
 
+	virtual bool hasArgs() { return false; }
+
 protected:
 	std::string name;
 	std::string content;
-	static CLprinter printer;
+	CLprinter printer;
 };
 
