@@ -22,6 +22,7 @@
 //Well known Queries Headers
 #include "queries/WKQuery.h"
 #include "queries/Procedure.h"
+#include "queries/Function.h"
 #include "queries/Query.h"
 
 // I\O stuff
@@ -59,14 +60,23 @@ public:
 
 		using string_tup = std::pair<std::string, std::string>;
 		
+		{
 
-		std::array<string_tup, 2> argn{
-			std::make_pair(AS_STR("Vehicle Code"), AS_STR("int")),
-			std::make_pair(AS_STR("Depot Code"), AS_STR("int"))
+			std::array<string_tup, 2> argn{
+				std::make_pair(AS_STR("Vehicle Code"), AS_STR("int")),
+				std::make_pair(AS_STR("Depot Code"), AS_STR("int"))
+			};
+
+			well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket", argn));
+
+		}
+		well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
+
+		std::array<string_tup, 1> argn{
+			std::make_pair(AS_STR("coi_code"), AS_STR("int"))
 		};
 
-		well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket", argn));
-		well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
+		well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
 
 		setState(DBcontext::MAIN_MENU);
 

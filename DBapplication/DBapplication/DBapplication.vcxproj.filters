@@ -56,5 +56,8 @@
     <ClInclude Include="src\manager\queries\Procedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\manager\queries\Function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,7 +6,8 @@ namespace color
 	constexpr auto FIELD = "\033[1;0;33m";
 
 	constexpr const char* QUERY = FIELD;
-	constexpr auto PROCEDURE = "\033[1;140;33m";
+	constexpr auto PROCEDURE = "\033[1;128;34m";
+	constexpr auto FUNCTION = "\033[1;128;31m";
 
 	constexpr auto STRUCTURE = "\x1B[0;31m";
 	constexpr auto VALUE = "\x1B[1;97m";

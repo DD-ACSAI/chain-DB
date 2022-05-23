@@ -23,7 +23,7 @@
 #endif
 
 #define USER     "postgres"
-#define PASSWORD "123x"
+#define PASSWORD "password"
 #define DB       "postgres"
 
 #include "defines/DBkeys.h"

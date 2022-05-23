@@ -177,6 +177,7 @@
     <ClCompile Include="src\manager\DBmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\manager\queries\Function.h" />
     <ClInclude Include="src\manager\queries\Procedure.h" />
     <ClInclude Include="src\manager\queries\Query.h" />
     <ClInclude Include="src\manager\queries\WKQuery.h" />
