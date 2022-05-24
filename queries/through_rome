@@ -1,0 +1,14 @@
+-- Find all client companies that "touch" Rome
+
+SELECT *
+FROM "Client"
+WHERE "Client"."CompanyCode" IN (
+	SELECT "Shipment"."ClientCode"
+	FROM "Shipment" JOIN "Crossing" as cr ON ("Shipment"."ID" = cr."ShipmentCode")
+	WHERE EXISTS (
+		SELECT *
+		FROM "Place"
+		WHERE ("Place"."ID" = cr."PlaceA" OR "Place"."ID" = cr."PlaceB")
+			AND "Place"."Name" = 'Rome'
+	)
+)

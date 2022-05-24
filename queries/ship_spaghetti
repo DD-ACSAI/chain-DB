@@ -1,0 +1,22 @@
+-- Find all Ship models that have transported spaghetti
+
+SELECT *
+FROM "Model" as md
+WHERE md."Type" = 'Ship' AND EXISTS (
+	SELECT *
+	FROM "Vehicle"
+	WHERE "Vehicle"."ModelCode" = md."ID" AND "Vehicle"."Type" = md."Type"
+		AND "Vehicle"."ID" IN (
+			SELECT "Crossing"."VehicleCode"
+			FROM "Crossing"
+			WHERE "Crossing"."ShipmentCode" IN (
+				SELECT "Shipment"."ID"
+				FROM "Shipment" JOIN "Cargo" ON ("Shipment"."ID" = "Cargo"."ShipmentCode")
+				WHERE "Cargo"."ProdCode" IN (
+					SELECT "Product"."ID"
+					FROM "Product"
+					WHERE "Product"."Name" = 'Spaghetti'
+				)
+			)
+		)
+	)
