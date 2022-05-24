@@ -63,7 +63,7 @@ void CLprinter::printTable(PGresult*& res, uint64_t maxRow)
 	printBlank(nFields);
 	printBottom(nFields);
 
-	stream << "" << std::endl;
+	stream << "" << "\n";
 
 	stream.flushBuf();
 	fieldNames.clear();
@@ -89,9 +89,9 @@ std::string CLprinter::createHeader(std::string const& context = "PLACEHOLDER") 
 
 	auto blankspace = (w - 4) / 3;
 
-	str_build << color::STRUCTURE << tl_corner << std::string(w, hline) << tr_corner << color::RESET << std::endl;
+	str_build << color::STRUCTURE << tl_corner << std::string(w, hline) << tr_corner << color::RESET << "\n";
 
-	str_build << color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << std::endl << color::STRUCTURE << vline << color::RESET << "  ";
+	str_build << color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << "\n" << color::STRUCTURE << vline << color::RESET << "  ";
 
 
 	for (std::size_t indx = 0; indx < phrases.size(); ++indx)
@@ -118,9 +118,9 @@ std::string CLprinter::createHeader(std::string const& context = "PLACEHOLDER") 
 	}
 
 
-	str_build << "  " << color::STRUCTURE << vline << color::RESET << std::endl
-		<< color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << std::endl
-		<< color::STRUCTURE << bl_corner << std::string(w, hline) << br_corner << color::RESET << std::endl << std::endl;
+	str_build << "  " << color::STRUCTURE << vline << color::RESET << "\n"
+		<< color::STRUCTURE << vline << color::RESET << std::string(w, ' ') << color::STRUCTURE << vline << color::RESET << "\n"
+		<< color::STRUCTURE << bl_corner << std::string(w, hline) << br_corner << color::RESET << "\n\n";
 
 
 	return str_build.str();
@@ -139,7 +139,7 @@ void CLprinter::setPadding(int16_t padSize) {
 	}
 	catch (int n)
 	{
-		std::cerr << "Padding must be a number divisible by 2, provided number was: " << n << std::endl;
+		std::cerr << "Padding must be a number divisible by 2, provided number was: " << n << "\n";
 	}
 }
 
@@ -155,7 +155,7 @@ void CLprinter::setMaxCellSize(int16_t cellSize)
 	}
 	catch (int n)
 	{
-		std::cerr << "Cell size must be a number divisible by 2, provided number was: " << n << std::endl;
+		std::cerr << "Cell size must be a number divisible by 2, provided number was: " << n << "\n";
 	}
 }
 
@@ -164,7 +164,7 @@ CLprinter::CLprinter() : windowAttr(CLprinter::getHandle()), header(createHeader
 	fieldNames.reserve(8);
 	fieldLen.reserve(8);
 
-	constexpr const int16_t MAXCELLSIZE = 12;
+	constexpr const int16_t MAXCELLSIZE = 14;
 	constexpr const int16_t PADDING = 2;
 
 	static_assert(MAXCELLSIZE % 2 == 0, "CELLSIZE must be even!");

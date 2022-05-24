@@ -44,7 +44,7 @@ static bool beginTransaction(PGconn*& connection)
         //Preprocessor defines in order to reduce code size.
 #ifdef _DEBUG
 
-        std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << std::endl;
+        std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << "\n";
 
 #endif // DEBUG
         PQclear(res);
@@ -66,7 +66,7 @@ static bool endTransaction(PGconn*& connection)
     {
 #ifdef _DEBUG
 
-        std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << std::endl;
+        std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << "\n";
 
 #endif
         PQclear(res);
@@ -93,12 +93,12 @@ static bool executeQuery(const char* query, PGresult*& res, PGconn*& connection)
 
     if (statusFailed(status) || res == nullptr)
     {
-        std::cerr << "Query failed: " << PQerrorMessage(connection) << std::endl;
+        std::cerr << "Query failed: " << PQerrorMessage(connection) << "\n";
 
 #ifdef _DEBUG
         //ADDITIONAL INFORMATION IF DEBUG IS ENABLED
-        std::cerr << "Result Status: " << PQresStatus(status) << std::endl;
-        std::cerr << "Query was: " << query << std::endl;
+        std::cerr << "Result Status: " << PQresStatus(status) << "\n";
+        std::cerr << "Query was: " << query << "\n";
 #endif // DEBUG
 
         PQclear(res);
@@ -143,19 +143,19 @@ static PGconn* connect(const char* const conninfo)
     if (PQstatus(conn) != CONNECTION_OK)
     {
 
-        std::cerr << PQerrorMessage(conn) << std::endl;
+        std::cerr << PQerrorMessage(conn) << "\n";
 
         exit_program(conn);
     }
 
 #ifdef _DEBUG
-    std::clog << "Connection Successful!, printing connection information as follows: " << std::endl
-        << "DB name: " << PQdb(conn) << std::endl
-        << "Username: " << PQuser(conn) << std::endl
-        << "Password: " << PQpass(conn) << std::endl
-        << "Host Address: " << PQhostaddr(conn) << " at port " << PQport(conn) << std::endl
-        << "Connection Options: " << PQoptions(conn) << std::endl
-        << "Connection Status: " << PQstatus(conn) << std::endl;
+    std::clog << "Connection Successful!, printing connection information as follows: " << "\n"
+        << "DB name: " << PQdb(conn) << "\n"
+        << "Username: " << PQuser(conn) << "\n"
+        << "Password: " << PQpass(conn) << "\n"
+        << "Host Address: " << PQhostaddr(conn) << " at port " << PQport(conn) << "\n"
+        << "Connection Options: " << PQoptions(conn) << "\n"
+        << "Connection Status: " << PQstatus(conn) << "\n";
 #endif // _DEBUG
 
     return conn;
@@ -190,7 +190,9 @@ public:
     queryRes& operator=(queryRes const&) = default;
 };
 
-std::unordered_set<std::string> const static SQLtokens = { "SELECT", "FROM", "WHERE", "ORDER BY", "GROUP BY", "SUM", "AVG", "DROP", "SCHEMA", "CASCADE", "CALL", "AS", "JOIN", "ON" };
+std::unordered_set<std::string> const static SQLtokens = { "SELECT", "FROM", "DELETE", "WHERE", "ORDER BY", "GROUP", 
+                                                            "SUM", "AVG", "DROP", "SCHEMA", "CASCADE", "CALL", "AS", 
+                                                            "JOIN", "ON", "ORDER", "BY", "EXISTS", "NOT"};
 
 
 std::string static parseQuery(std::string_view query_str)

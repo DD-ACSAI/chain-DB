@@ -78,7 +78,7 @@ public:
 			std::cin >> arg;
 			args[i++] = arg;
 		}
-		std::cout << std::endl;
+		std::cout << "\n";
 
 		std::stringstream query;
 		query << "SELECT * FROM \"" + call_name + "\"(";
@@ -99,7 +99,7 @@ public:
 		PQescapeStringConn(conn, target_buff, query_built.c_str(), query_built.size(), &error);
 
 		if (query::atomicQuery(target_buff, res, conn))
-			std::cout << "\Function \"" << parsed_name << "\" correctly executed!" << std::endl;
+			std::cout << "\Function \"" << parsed_name << "\" correctly executed!" << "\n";
 
 
 		printer.printTable(res);

@@ -107,7 +107,7 @@ public:
 		else
 			outBuf << nodeName;
 
-		outBuf << std::endl;
+		outBuf << "\n";
 
 		for (auto const& c : children)
 		{

@@ -38,8 +38,7 @@ enum class DBcontext : char {
 	DIR_TREE,
 	TABLE_VIEW,
 	QUERY_TOOL,
-	WK_QUERIES,
-	QUERY_EXEC
+	WK_QUERIES
 };
 
 #define AS_STR(X) std::string(X)
@@ -85,7 +84,7 @@ public:
 			query::queryRes extract(res);
 
 #ifdef _DEBUG
-			std::cout << "listing schemas: " << std::endl;
+			std::cout << "listing schemas: " << "\n";
 			printUtil.printTable(res);
 #endif
 			for (lint i = 0; i < extract.rows; ++i)
@@ -95,7 +94,7 @@ public:
 				root.addChildren(name);
 
 #ifdef _DEBUG
-				std::cout << schemas.at(i) << std::endl;
+				std::cout << schemas.at(i) << "\n";
 #endif
 			}
 		}
@@ -114,7 +113,7 @@ public:
 
 
 #ifdef _DEBUG
-			std::cout << "listing tables for schema " << schema << ": " << std::endl;
+			std::cout << "listing tables for schema " << schema << ": " << "\n";
 			printUtil.printTable(res);
 #endif	
 		}
@@ -139,11 +138,12 @@ public:
 		switch (state) //Trigger a set of changes based on the incoming state
 		{
 		case DBcontext::DIR_TREE:
+			printUtil.updateHeader("DB Directory Tree");
 			CLprinter::showCursor(false);
-
 			break;
 		case DBcontext::TABLE_VIEW:
 		{
+			printUtil.updateHeader("Table View");
 			CLprinter::showCursor(false);
 			currTab.tabSchema = root[std::get<1>(selected_dir)].getName();
 			currTab.tabName = root[currTab.tabSchema][std::get<2>(selected_dir)].getName();
@@ -159,16 +159,16 @@ public:
 			break;
 		}
 		case DBcontext::QUERY_TOOL:
+			printUtil.updateHeader("Query Tool");
 			CLprinter::showCursor(true);
 			handleQueryTool();
 			break;
 		case DBcontext::MAIN_MENU:
-			CLprinter::showCursor(false);
-			break;
-		case DBcontext::QUERY_EXEC:
+			printUtil.updateHeader("Main Menu");
 			CLprinter::showCursor(false);
 			break;
 		case DBcontext::WK_QUERIES:
+			printUtil.updateHeader("Well-Known Queries and Procedures");
 			CLprinter::showCursor(false);
 			handleWK();
 			break;
@@ -189,7 +189,7 @@ public:
 
 	}
 
-	void printFS()
+	void getFS()
 	{
 
 		auto sel = std::string("");
@@ -209,8 +209,6 @@ public:
 		}
 
 		root.printRecursive(sel, outBuf, isHidingPrivate, curPos);
-		std::cout << outBuf.str(); outBuf.str(std::string());
-
 	}
 
 	void printTableView() const
@@ -218,27 +216,27 @@ public:
 
 		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
 
-		std::cout << std::endl << " ";
+		std::cout << "\n" << " ";
 
 		for (std::size_t i = 0; i < phrases.size(); ++i)
 		{
 			if (i == currTab.selected_opt)
-				std::cout << "(" << i << ") " << color::SELECTED << phrases[i] << color::RESET << std::endl << ' ';
+				std::cout << "(" << i << ") " << color::SELECTED << phrases[i] << color::RESET << "\n" << ' ';
 			else 
-				std::cout << "(" << i << ") " << phrases[i] << std::endl << ' ';
+				std::cout << "(" << i << ") " << phrases[i] << "\n" << ' ';
 		}
 
 	}
 
 	void printMainMenu() const
 	{
-		std::cout << std::endl;
+		std::cout << "\n";
 		for (std::size_t i = 0; i < menu_options.size(); ++i)
 		{
 			if (i == selected_menu_opt)
-				std::cout << " * " << color::SELECTED << menu_options[i] << color::RESET << std::endl;
+				std::cout << " * " << color::SELECTED << menu_options[i] << color::RESET << "\n";
 			else
-				std::cout << " * " << menu_options[i] << std::endl;
+				std::cout << " * " << menu_options[i] << "\n";
 		}
 	}
 
@@ -246,14 +244,12 @@ public:
 	{
 
 		std::system("CLS");
-
-		printUtil.updateHeader("Query Tool");
 		std::string query;
 
 		for (;;)
 		{
 			printUtil.printHeader();
-			std::cout << std::endl << std::endl << " Query: ";
+			std::cout << "\n" << "\n" << " Query: ";
 
 			for (;;) {
 				auto c = _getch();
@@ -290,7 +286,7 @@ public:
 
 			if (query.empty())
 			{
-				std::cerr << "  Empty query received, please, at least type something!" << std::endl;
+				std::cerr << "  Empty query received, please, at least type something!" << "\n";
 				_getch();
 				std::system("CLS");
 				continue;
@@ -301,7 +297,7 @@ public:
 
 			PQescapeStringConn(conn, target_buff, query.c_str(), query.size(), &error);
 
-			std::cout << std::endl << std::endl;
+			std::cout << "\n\n";
 
 			if(query::atomicQuery(target_buff, res, conn))
 				printUtil.printTable(res);
@@ -321,22 +317,20 @@ public:
 	void handleWK()
 	{
 
-		printUtil.updateHeader("Well-Known Queries and Procedures");
-
 		for (;;)
 		{
 			std::system("CLS");
 			printUtil.printHeader();
 
-			std::cout << "Well Known Queries: " << std::endl << std::endl;
+			std::cout << "Well Known Queries: " << "\n" << "\n";
 
 			size_t i = 0;
 			for (auto const& wk : well_knowns)
 			{
 				if (i++ == selected_wk)
-					std::cout << " * " << color::SELECTED << wk->getName() << color::RESET << std::endl;
+					std::cout << " * " << color::SELECTED << wk->getName() << color::RESET << "\n";
 				else
-					std::cout << " * " << wk->getName() << std::endl;
+					std::cout << " * " << wk->getName() << "\n";
 			}
 
 			auto c = parseKey(_getch());
@@ -347,7 +341,7 @@ public:
 				goto EXIT;
 				break;
 			case ENTER_KEY:
-				std::cout << std::endl;
+				std::cout << "\n";
 				well_knowns[selected_wk]->execute(res, conn);
 				_getch();
 				break;
@@ -372,40 +366,42 @@ public:
 
 	void execWK(size_t indx)
 	{
-		std::cout << "I am executing: " << indx << std::endl;
+		std::cout << "I am executing: " << indx << "\n";
 	}
 
 	void refreshScreen()
 	{
 
-		std::system("CLS");
-		
 		switch (context)
 		{
 		case DBcontext::DIR_TREE:
 
-			printUtil.updateHeader("DB Directory Tree");
+			getFS();
+			std::system("CLS");
 			printUtil.printHeader();
-			printFS();
+			std::cout << outBuf.str(); outBuf.str(std::string());
+			
 			CLprinter::setPos(0, std::max(0, curPos - 10));
 
 			break;
 		case DBcontext::TABLE_VIEW:
 
-			printUtil.updateHeader("Table View");
+			std::system("CLS");
 			printUtil.printHeader();
 			printTableView();
 
 			break;
 		case DBcontext::MAIN_MENU:
 
-			printUtil.updateHeader("Main Menu");
+			
+			std::system("CLS");
 			printUtil.printHeader();
+
 			printMainMenu();
 
 			break;
 		default:
-
+			std::system("CLS");
 			assert("Invalid State");
 			break;
 		}
@@ -518,7 +514,7 @@ public:
 			if (bounds.first > bounds.second)
 			{
 				std::system("CLS");
-				std::cout << "No non-system tables in this Database!" << std::endl;
+				std::cout << "No non-system tables in this Database!" << "\n";
 				break;
 			}
 			refreshScreen();
@@ -590,7 +586,7 @@ public:
 			//Input here is handled differently in handleWK() 
 			break;
 		default:
-			std::cerr << "context unhandled!" << std::endl;
+			std::cerr << "context unhandled!" << "\n";
 			break;
 		}
 		

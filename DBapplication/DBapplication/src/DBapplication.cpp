@@ -23,7 +23,7 @@
 #endif
 
 #define USER     "postgres"
-#define PASSWORD "password"
+#define PASSWORD "123x"
 #define DB       "postgres"
 
 #include "defines/DBkeys.h"
@@ -57,15 +57,15 @@ int main(int argc, char** argv)
 
         std::cout << "Insert DB Name to connect: ";
         std::cin >> dbname;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         std::cout << "Insert Username to connect: ";
         std::cin >> username;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         std::cout << "Insert Password to connect: ";
         std::cin >> password;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         connect_query = "dbname = " + dbname + " password = " + password + " user = " + username;
     }

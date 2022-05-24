@@ -28,7 +28,7 @@ public:
 
 	void execute(PGresult*& res, PGconn*& conn) override
 	{
-		std::cout << std::endl << "Executing Query " << color::FIELD << name << color::RESET << ": " << std::endl << "\t" << parsed_query << std::endl;
+		std::cout << "\n" << "Executing Query " << color::FIELD << name << color::RESET << ": " << "\n" << "\t" << parsed_query << "\n";
 		query::atomicQuery(content.c_str(), res, conn);
 
 		printer.printTable(res);
