@@ -58,25 +58,54 @@ public:
 		std::vector<std::string> schemas(6);
 
 		using string_tup = std::pair<std::string, std::string>;
-		
-		{
+		{//Instantiating Well Knowns (Boilerplate warning!)
 
-			std::array<string_tup, 2> argn{
-				std::make_pair(AS_STR("Vehicle Code"), AS_STR("int")),
-				std::make_pair(AS_STR("Depot Code"), AS_STR("int"))
+			//PROCEDURES
+			{
+				{
+					std::array<string_tup, 3> argn{			//Create Connection
+						std::make_pair(AS_STR("Place A"), AS_STR("int")),
+						std::make_pair(AS_STR("Place B"), AS_STR("int")),
+						std::make_pair(AS_STR("Allowed Vehicle"), AS_STR("vehicle_type"))
+					};
+					well_knowns.emplace_back(std::make_unique<Procedure<3>>("Create Connection", "Add connection", argn));
+				}
+
+				{
+					std::array<string_tup, 2> argn{			//Create Ticket
+						std::make_pair(AS_STR("Vehicle Code"), AS_STR("int")),
+						std::make_pair(AS_STR("Depot Code"), AS_STR("int"))
+					};
+				
+					well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket", "Create Ticket", argn));
+				}
+
+				{
+					std::array<string_tup, 1> argn{			//Delete Route
+						std::make_pair(AS_STR("Route Code"), AS_STR("int")),
+					};
+
+					well_knowns.emplace_back(std::make_unique<Procedure<1>>("Delete Route", "Delete Route", argn));
+				}
+
+				{
+					std::array<string_tup, 1> argn{			//Delete Shipment
+						std::make_pair(AS_STR("Shipment Code"), AS_STR("int")),
+					};
+
+					well_knowns.emplace_back(std::make_unique<Procedure<1>>("Delete Shipment", "Delete Shipment", argn));
+				}
+			}
+			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
+
+			std::array<string_tup, 1> argn{
+				std::make_pair(AS_STR("coi_code"), AS_STR("int"))
 			};
 
-			well_knowns.emplace_back(std::make_unique<Procedure<2>>("Create Ticket", argn));
+			well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
 
 		}
-		well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
-
-		std::array<string_tup, 1> argn{
-			std::make_pair(AS_STR("coi_code"), AS_STR("int"))
-		};
-
-		well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
-
+		
 		setState(DBcontext::MAIN_MENU);
 
 		{	// First query scope (frees locals at the end)

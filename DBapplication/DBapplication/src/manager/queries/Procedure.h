@@ -13,9 +13,10 @@ class Procedure : public WKQuery
 	using string_tup = std::pair<std::string, std::string>;
 
 public:
-	explicit Procedure(std::string_view proc_name, std::array<string_tup, S> const& argnames) : argn(argnames)
+	Procedure(std::string_view proc_name, std::string_view c_name, std::array<string_tup, S> const& argnames) : argn(argnames)
 	{
 		name = proc_name;
+		call_name = c_name;
 
 		std::stringstream strbuild;
 
@@ -30,9 +31,10 @@ public:
 		parsed_name = strbuild.str();
 	}
 
-	explicit Procedure(const char* proc_name, std::array<string_tup, S> const& argnames) : argn(argnames)
+	Procedure(const char* proc_name, const char* c_name, std::array<string_tup, S> const& argnames) : argn(argnames)
 	{
 		name = std::string(proc_name);
+		call_name = c_name;
 
 		std::stringstream strbuild;
 
@@ -112,5 +114,6 @@ private:
 	std::array<string_tup, S> argn;
 	std::array<std::string, S> args;
 	std::string parsed_name;
+	std::string call_name;
 };
 
