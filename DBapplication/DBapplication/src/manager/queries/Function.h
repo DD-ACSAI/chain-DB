@@ -93,12 +93,7 @@ public:
 		std::string query_built = query.str();
 		query_built.erase(query_built.size() - 3, 2);
 
-		auto target_buff = new char[2 * static_cast<int>(query_built.size()) + 1];
-		int error;
-
-		PQescapeStringConn(conn, target_buff, query_built.c_str(), query_built.size(), &error);
-
-		if (query::atomicQuery(target_buff, res, conn))
+		if (query::atomicQuery(query_built.c_str(), res, conn))
 			std::cout << "\Function \"" << parsed_name << "\" correctly executed!" << "\n";
 
 

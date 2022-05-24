@@ -2,7 +2,7 @@
 #define NOMINMAX
 #include <string>
 #include <algorithm>
-
+#include <typeinfo>
 #include <vector>
 #include <array>
 #include <utility>
@@ -47,15 +47,18 @@ class DBmanager
 {
 public:
 
-	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), curPos(0), selected_menu_opt(0), selected_wk(0)
+	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), 
+		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries" }), selected_menu_opt(0)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 
-		menu_options = { "Show Directory Tree", "Query Tool", "Well Known Queries" };
+		well_knowns.reserve(32);
 
-		std::vector<std::string> schemas(6);
+
+
+		std::vector<std::string> schemas(12);
 
 		using string_tup = std::pair<std::string, std::string>;
 		{//Instantiating Well Knowns (Boilerplate warning!)
@@ -63,12 +66,13 @@ public:
 			//PROCEDURES
 			{
 				{
-					std::array<string_tup, 3> argn{			//Create Connection
+					std::array<string_tup, 4> argn{			//Create Connection
 						std::make_pair(AS_STR("Place A"), AS_STR("int")),
 						std::make_pair(AS_STR("Place B"), AS_STR("int")),
-						std::make_pair(AS_STR("Allowed Vehicle"), AS_STR("vehicle_type"))
+						std::make_pair(AS_STR("Allowed Vehicle"), AS_STR("vehicle_type")),
+						std::make_pair(AS_STR("Fee"), AS_STR("real"))
 					};
-					well_knowns.emplace_back(std::make_unique<Procedure<3>>("Create Connection", "Add connection", argn));
+					well_knowns.emplace_back(std::make_unique<Procedure<4>>("Create Connection", "Add Connection", argn));
 				}
 
 				{
@@ -89,23 +93,117 @@ public:
 				}
 
 				{
-					std::array<string_tup, 1> argn{			//Delete Shipment
+					std::array<string_tup, 2> argn{			//Delete Shipment
+						std::make_pair(AS_STR("Shipment Code"), AS_STR("int")),
+						std::make_pair(AS_STR("From Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Shipment", "Delete shipment", argn));
+				}
+
+				{
+					std::array<string_tup, 1> argn{			//Unload Shipment
 						std::make_pair(AS_STR("Shipment Code"), AS_STR("int")),
 					};
 
-					well_knowns.emplace_back(std::make_unique<Procedure<1>>("Delete Shipment", "Delete Shipment", argn));
+					well_knowns.emplace_back(std::make_unique<Procedure<1>>("Unload Shipment", "Unload shipment", argn));
 				}
 			}
+
+			{  //Functions
+
+				{//Check Stock
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("coi_code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
+
+				}
+
+				{//Find Connection Frequency
+
+					std::array<string_tup, 3> argn{
+						std::make_pair(AS_STR("Place A Code"), AS_STR("int")),
+						std::make_pair(AS_STR("Place B Code"), AS_STR("int")),
+						std::make_pair(AS_STR("Vehicle Type"), AS_STR("vehicle_type")),
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<3>>("Find Connection Frequency", "find_connection_frequency", argn));
+
+				}
+
+				{//Find Company Models
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("Company Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("FindCompany Models", "find_models", argn));
+
+				}
+
+				{//Find Route Frequency
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("Route Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("Find Route Frequency", "find_route_frequency", argn));
+
+				}
+
+				{//Get Client Shipments
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("Client Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("Get Client Frequency", "get_all_shipments", argn));
+
+				}
+
+				{//Get CoI Type
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("CoI Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("Get CoI Type", "get_coi_type", argn));
+
+				}
+
+				{//Check Ticket Legality
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("Ticket Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("Check Ticket Legality", "is_legal_ticket", argn));
+
+				}
+
+				{//Get Route Viewers
+
+					std::array<string_tup, 1> argn{
+						std::make_pair(AS_STR("Route Code"), AS_STR("int"))
+					};
+
+					well_knowns.emplace_back(std::make_unique<Function<1>>("See Route Viewers", "route_viewers", argn));
+
+				}
+
+
+			}
+
+
 			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
-
-			std::array<string_tup, 1> argn{
-				std::make_pair(AS_STR("coi_code"), AS_STR("int"))
-			};
-
-			well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
 
 		}
 		
+		well_knowns.shrink_to_fit();
+
 		setState(DBcontext::MAIN_MENU);
 
 		{	// First query scope (frees locals at the end)
@@ -147,9 +245,11 @@ public:
 #endif	
 		}
 
+		
 		setHide(false);
 		refreshScreen();
 		CLprinter::setPos(0, 0);
+
 
 	}
 
@@ -393,11 +493,6 @@ public:
 		refreshScreen();
 	}
 
-	void execWK(size_t indx)
-	{
-		std::cout << "I am executing: " << indx << "\n";
-	}
-
 	void refreshScreen()
 	{
 
@@ -491,7 +586,7 @@ public:
 					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected_dir) = std::max((size_t)0, std::get<2>(selected_dir) - 1);
+					std::get<2>(selected_dir) = std::max(0i64, std::get<2>(selected_dir) - 1);
 					break;
 				default:
 					break;
@@ -499,7 +594,7 @@ public:
 				break;
 			case A_KEY:
 			case LEFT_KEY:
-				std::get<0>(selected_dir) = std::max((size_t)0, std::get<0>(selected_dir) - 1);
+				std::get<0>(selected_dir) = std::max(0i64, std::get<0>(selected_dir) - 1);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
@@ -512,7 +607,7 @@ public:
 					std::get<2>(selected_dir) = 0;
 					break;
 				case 2:
-					std::get<2>(selected_dir) = std::min(root[std::get<1>(selected_dir)].getChildren().size() - 1, std::get<2>(selected_dir) + 1);
+					std::get<2>(selected_dir) = std::min((int64_t)root[std::get<1>(selected_dir)].getChildren().size() - 1, std::get<2>(selected_dir) + 1);
 					break;
 				default:
 					break;
@@ -525,15 +620,15 @@ public:
 				case 0:
 					if (root.getChildren().size() == 0)
 						break;
-					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min(2i64, std::get<0>(selected_dir) + 1);
 					break;
 				case 1:
 					if (root[std::get<1>(selected_dir)].getChildren().size() == 0)
 						break;
-					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min(2i64, std::get<0>(selected_dir) + 1);
 					break;
 				case 2:
-					std::get<0>(selected_dir) = std::min((size_t)2, std::get<0>(selected_dir) + 1);
+					std::get<0>(selected_dir) = std::min(2i64, std::get<0>(selected_dir) + 1);
 					break;
 				}
 				break;
@@ -553,12 +648,12 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				currTab.selected_opt = std::max((size_t)0, currTab.selected_opt - 1);
+				currTab.selected_opt = std::max(0i64, (int64_t)currTab.selected_opt - 1);
 				refreshScreen();
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				currTab.selected_opt = std::min((size_t)1, currTab.selected_opt + 1);
+				currTab.selected_opt = std::min(1i64, (int64_t)currTab.selected_opt + 1);
 				refreshScreen();
 				break;
 			case ENTER_KEY:
@@ -581,7 +676,7 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				selected_menu_opt = std::max(selected_menu_opt - 1, (size_t)0);
+				selected_menu_opt = std::max((int64_t) selected_menu_opt - 1, 0i64);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
@@ -640,8 +735,8 @@ private:
 	PGconn* conn;
 	CLprinter printUtil;
 	std::ostringstream outBuf;
-	std::tuple<size_t, size_t, size_t> selected_dir;
-	std::pair<size_t, size_t> bounds;
+	std::tuple<int64_t, int64_t, int64_t> selected_dir;
+	std::pair<int64_t, int64_t> bounds;
 	static DBcontext context;
 	bool isHidingPrivate;
 	int curPos;
@@ -650,6 +745,6 @@ private:
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
 	size_t selected_wk;
 
-	std::vector<std::string> menu_options;
+	std::array<std::string, 3> menu_options;
 	size_t selected_menu_opt;
 };
