@@ -172,11 +172,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\manager\Pathfinder.cpp" />
     <ClCompile Include="src\DButils\CLprinter.cpp" />
     <ClCompile Include="src\DBapplication.cpp" />
     <ClCompile Include="src\manager\DBmanager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\manager\Pathfinder.h" />
     <ClInclude Include="src\manager\queries\Function.h" />
     <ClInclude Include="src\manager\queries\Procedure.h" />
     <ClInclude Include="src\manager\queries\Query.h" />

@@ -38,7 +38,8 @@ enum class DBcontext : char {
 	DIR_TREE,
 	TABLE_VIEW,
 	QUERY_TOOL,
-	WK_QUERIES
+	WK_QUERIES,
+	PATHFINDER
 };
 
 #define AS_STR(X) std::string(X)
@@ -199,7 +200,9 @@ public:
 
 
 			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
-
+			well_knowns.emplace_back(std::make_unique<Query>("Find all Clients based in Rome", "SELECT * FROM \"Client\" WHERE \"Client\".\"CompanyCode\""
+				"IN( SELECT \"Shipment\".\"ClientCode\" FROM \"Shipment\" JOIN \"Crossing\" as cr ON(\"Shipment\".\"ID\" = cr.\"ShipmentCode\")"
+				"WHERE EXISTS( SELECT * FROM \"Place\" WHERE(\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\") AND \"Place\".\"Name\" = 'Rome'))"));
 		}
 		
 		well_knowns.shrink_to_fit();
@@ -301,6 +304,9 @@ public:
 			CLprinter::showCursor(false);
 			handleWK();
 			break;
+		case DBcontext::PATHFINDER:
+			printUtil.updateHeader("Best-Route Pathfinder");
+			CLprinter::showCursor(false);
 		default:
 			break;
 		}
@@ -476,11 +482,11 @@ public:
 				break;
 			case DOWN_KEY:	
 			case S_KEY:
-				selected_wk = std::min(well_knowns.size() - 1, selected_wk + 1);
+				selected_wk = std::min((int64_t)well_knowns.size() - 1, selected_wk + 1);
 				break;
 			case UP_KEY:
 			case W_KEY:
-				selected_wk = std::max((size_t)0, selected_wk - 1);
+				selected_wk = std::max(0i64, selected_wk - 1);
 				break;
 			default:
 				break;
@@ -676,11 +682,11 @@ public:
 			{
 			case W_KEY:
 			case UP_KEY:
-				selected_menu_opt = std::max((int64_t) selected_menu_opt - 1, 0i64);
+				selected_menu_opt = std::max(selected_menu_opt - 1, 0i64);
 				break;
 			case S_KEY:
 			case DOWN_KEY:
-				selected_menu_opt = std::min(menu_options.size() - 1, selected_menu_opt + 1);
+				selected_menu_opt = std::min((int64_t) menu_options.size() - 1, selected_menu_opt + 1);
 				
 				break;
 			case ENTER_KEY:
@@ -743,8 +749,8 @@ private:
 	tabViewAttr currTab;
 
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
-	size_t selected_wk;
+	int64_t selected_wk;
 
 	std::array<std::string, 3> menu_options;
-	size_t selected_menu_opt;
+	int64_t selected_menu_opt;
 };
