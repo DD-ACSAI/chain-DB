@@ -2,6 +2,7 @@
 #include "libpq-fe.h"
 #include <stdint.h>
 
+#include <iostream>
 #include <unordered_set>
 #include <memory>
 #include <string>
@@ -35,7 +36,7 @@ namespace query
  *
  * \param connection    Pointer to a Database Connection.
  */
-static bool beginTransaction(PGconn*& connection)
+static bool beginTransaction(PGconn* const& connection)
 {
     PGresult* res = PQexec(connection, "BEGIN");
 
@@ -59,7 +60,7 @@ static bool beginTransaction(PGconn*& connection)
  *
  * \param connection    Pointer to a Database Connection.
  */
-static bool endTransaction(PGconn*& connection)
+static bool endTransaction(PGconn* const& connection)
 {
     PGresult* res = PQexec(connection, "END");
     if (statusFailed(PQresultStatus(res)) || res == nullptr)
@@ -85,7 +86,7 @@ static bool endTransaction(PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-static bool executeQuery(const char* query, PGresult*& res, PGconn*& connection)
+static bool executeQuery(const char* query, PGresult*& res, PGconn* const& connection)
 {
     res = PQexec(connection, query);
 
@@ -117,7 +118,7 @@ static bool executeQuery(const char* query, PGresult*& res, PGconn*& connection)
  * \param res           Pointer to a PGresult, results of the query will be dumped here
  * \param connection    Pointer to a Database Connection.
  */
-static bool atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
+static bool atomicQuery(const char* query, PGresult*& res, PGconn* const& connection)
 {
     bool status = false;
     if (beginTransaction(connection))
@@ -136,7 +137,7 @@ static bool atomicQuery(const char* query, PGresult*& res, PGconn*& connection)
  * \param conninfo const CString storing all the parameters of the connection.
  * \return      Returns a pointer to PGconn, a struct representing a connection to the DB.
  */
-static PGconn* connect(const char* const conninfo)
+static PGconn* connect(const char* const& conninfo)
 {
     PGconn* conn = PQconnectdb(conninfo);
 
