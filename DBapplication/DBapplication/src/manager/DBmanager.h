@@ -19,6 +19,9 @@
 #error "No compatibility, sorry!"
 #endif
 
+//Pathfinder
+#include "Pathfinder.h"
+
 //Well known Queries Headers
 #include "queries/WKQuery.h"
 #include "queries/Procedure.h"
@@ -49,7 +52,7 @@ class DBmanager
 public:
 
 	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), 
-		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries" }), selected_menu_opt(0)
+		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries", "Pathfinder Utility"}), selected_menu_opt(0), pather(conn, res)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
@@ -307,6 +310,7 @@ public:
 		case DBcontext::PATHFINDER:
 			printUtil.updateHeader("Best-Route Pathfinder");
 			CLprinter::showCursor(false);
+			handlePathfinder();
 		default:
 			break;
 		}
@@ -493,6 +497,12 @@ public:
 	EXIT:
 		setState(DBcontext::MAIN_MENU);
 		refreshScreen();
+	}
+
+	void handlePathfinder()
+	{
+		pather.pathfind(2, 3);
+		_getch();
 	}
 
 	void refreshScreen()
@@ -698,6 +708,10 @@ public:
 				{
 					setState(DBcontext::WK_QUERIES);
 				}
+				else if (selected_menu_opt == 3)
+				{
+					setState(DBcontext::PATHFINDER);
+				}
 
 			case ESC_KEY:
 				//Find a way to kill the program
@@ -747,6 +761,7 @@ private:
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
 	int64_t selected_wk;
 
-	std::array<std::string, 3> menu_options;
+	std::array<std::string, 4> menu_options;
 	int64_t selected_menu_opt;
+	Pathfinder pather;
 };
