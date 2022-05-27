@@ -55,13 +55,12 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 	static auto cmp = [](paths::destination const& left, paths::destination const& right) { return (left.distance + left.heuristic) > (right.distance + right.heuristic); };
 	static std::priority_queue < paths::destination, std::vector<paths::destination>, decltype(cmp)> queue(cmp);
 
-
 	/*
 	
 	Initializing CoI codes to Place Codes
 	
 	*/
-	std::stringstream querybuilder;
+	static std::stringstream querybuilder;
 
 
 	querybuilder << "SELECT \"CenterOfInterest\".\"PlaceCode\" FROM public.\"CenterOfInterest\" WHERE \"CenterOfInterest\".\"ID\" = " << from_code << ";";
@@ -160,14 +159,77 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 		return;
 	}
 
+	path.pop_back();
 	std::reverse(path.begin(), path.end());
 
 	size_t i = 0;
 
-	for (auto const& node : path)
+#ifdef _DEBUG	
+for (auto const& node : path)
 	{
 		std::cout << "(" << i++ << "): " << node.from << " " << node.to << " " << node.distance << std::endl;
 	}
+#endif // _DEBUG
 
 
+
+	//We inject this route!
+	querybuilder.str(std::string());
+	querybuilder << "CALL \"Inject Route\"(" << from_code << ", " << to_code << ", 5, ";
+
+	std::stringstream arr1;
+	std::stringstream arr2;
+	std::stringstream arr3;
+
+	arr1 << "\'{";
+	arr2 << "\'{";
+	arr3 << "\'{";
+
+	for (auto const& node : path)
+	{
+		arr1 << node.from << ", ";
+		arr2 << node.to   << ", ";
+
+		switch (node.vehicle)
+		{
+		case paths::CAR:
+			arr3 << "Car, ";
+			break;
+		case paths::SHIP:
+			arr3 << "Ship, ";
+			break;
+		case paths::PLANE:
+			arr3 << "Plane, ";
+			break;
+		default:
+			break;
+		}
+	}
+
+	arr1 << "}\'";
+	arr2 << "}\'";
+	arr3 << "}\'";
+
+	std::string arr1_str = arr1.str();
+	arr1_str.erase(arr1_str.size() - 4, 2);
+
+	std::string arr2_str = arr2.str();
+	arr2_str.erase(arr2_str.size() - 4, 2);
+
+	std::string arr3_str = arr3.str();
+	arr3_str.erase(arr3_str.size() - 4, 2);
+
+	std::cout << arr1_str << std::endl << arr2_str << std::endl << arr3_str;
+
+	querybuilder << arr1_str << ", " << arr2_str << ", " << arr3_str << ")";
+
+	query::atomicQuery(querybuilder.str().c_str(), res, conn);
+	PQclear(res);
+
+	query::atomicQuery("SELECT * FROM public.\"Contains\" WHERE \"Contains\".\"RouteCode\" = 5 ORDER BY \"Contains\".\"Order\"", res, conn);
+	printer.printTable(res);
+	PQclear(res);
+
+	querybuilder.str(std::string());
+	destinations.clear();
 }
