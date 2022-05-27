@@ -427,17 +427,12 @@ public:
 				continue;
 			}
 
-			auto target_buff = new char[ 2 * static_cast<int>(query.size()) + 1 ];
-			int error;
-
-			PQescapeStringConn(conn, target_buff, query.c_str(), query.size(), &error);
 
 			std::cout << "\n\n";
 
-			if(query::atomicQuery(target_buff, res, conn))
+			if(query::atomicQuery(query.c_str(), res, conn))
 				printUtil.printTable(res);
 
-			delete[] target_buff;
 			query.clear();
 
 			_getch();
@@ -479,6 +474,7 @@ public:
 				std::cout << "\n";
 				well_knowns[selected_wk]->execute(res, conn);
 				_getch();
+				PQclear(res);
 				break;
 			case DOWN_KEY:	
 			case S_KEY:
