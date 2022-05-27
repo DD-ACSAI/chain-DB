@@ -501,7 +501,7 @@ public:
 
 	void handlePathfinder()
 	{
-		pather.pathfind(2, 3);
+		pather.pathfind(5, 8);
 		_getch();
 	}
 

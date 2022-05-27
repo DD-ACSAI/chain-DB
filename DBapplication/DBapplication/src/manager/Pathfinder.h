@@ -24,9 +24,9 @@ namespace paths
 		VehicleType vehicle;
 		int64_t from;
 		int64_t to;
+		double fee;
 		double distance;
 		double heuristic;
-		double fee;
 
 	public:
 		inline destination(paths::VehicleType const vehicleType, int64_t const from_code, int64_t const to_code, double const distance_val, double const fee, double const heuristic) 

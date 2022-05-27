@@ -7,7 +7,8 @@
 #include <vector>
 #include <map>
 #include <unordered_set>
-
+#include <stack>
+#include <algorithm>
 
 
 namespace paths
@@ -93,22 +94,19 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 
 	queue.emplace(paths::CAR, _strtoi64(placecode_from.c_str(), nullptr, 10), _strtoi64(placecode_from.c_str(), nullptr, 10), 0.0, 0.0, 0.0);
 
-	std::vector<paths::destination> path;
-	
-	double tot_distance = 0.0;
+	std::stack<paths::destination> explored;
 
 	while(!queue.empty()) {
-		path.emplace_back(queue.top());
-		tot_distance += queue.top().distance;
+		explored.emplace(queue.top());
 		
-		if (path.back().to == _strtoi64(placecode_to.c_str(), nullptr, 10))
+		if (explored.top().to == _strtoi64(placecode_to.c_str(), nullptr, 10))
 		{
 			break;
 		}
 
 		queue.pop();
 		
-		querybuilder << "SELECT * FROM \"Connection\" WHERE \"Connection\".\"PlaceA\" = " << path.back().to << "; ";
+		querybuilder << "SELECT * FROM \"Connection\" WHERE \"Connection\".\"PlaceA\" = " << explored.top().to << "; ";
 
 		query::atomicQuery(querybuilder.str().c_str(), res, conn);
 		querybuilder.str(std::string());
@@ -123,22 +121,53 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 			query::atomicQuery(querybuilder.str().c_str(), res, conn);
 			querybuilder.str(std::string());
 
-			dest.heuristic = std::stod(PQgetvalue(res, 0, 0));
+			dest.heuristic = 1.6 * std::stod(PQgetvalue(res, 0, 0));
 			if (reached.find(dest.to) == reached.end())
 			{
-				dest.distance += tot_distance;
+				dest.distance += explored.top().distance;
 				queue.push(dest);
-				
 			}
 		}
 
-		reached.insert(path.back().to);
+		reached.insert(explored.top().to);
 	}
 
+	std::vector<paths::destination> path;
+
+	// Reconstruct
+	if (explored.empty()) {
+		// Print something
+		return;
+	}
+
+	path.emplace_back(explored.top());
+
+	if (path.back().to != _strtoi64(placecode_to.c_str(), nullptr, 10)) {
+		// Print something
+		return;
+	}
+
+	for (; !explored.empty(); explored.pop()) {
+		paths::destination curr_destination = explored.top();
+
+		if (curr_destination.to == path.back().from) {
+			path.emplace_back(curr_destination);
+		}
+	}
+
+	if (path.back().from != _strtoi64(placecode_from.c_str(), nullptr, 10)) {
+		// Something went really wrong!
+		return;
+	}
+
+	std::reverse(path.begin(), path.end());
+
 	size_t i = 0;
+
 	for (auto const& node : path)
 	{
 		std::cout << "(" << i++ << "): " << node.from << " " << node.to << " " << node.distance << std::endl;
 	}
+
 
 }
