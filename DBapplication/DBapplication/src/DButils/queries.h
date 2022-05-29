@@ -187,7 +187,8 @@ public:
 
 std::unordered_set<std::string> const static SQLtokens = { "SELECT", "FROM", "DELETE", "WHERE", "ORDER BY", "GROUP", 
                                                             "SUM", "AVG", "DROP", "SCHEMA", "CASCADE", "CALL", "AS", 
-                                                            "JOIN", "ON", "ORDER", "BY", "EXISTS", "NOT"};
+                                                            "JOIN", "ON", "ORDER", "BY", "EXISTS", "NOT", "WITH", "OR", 
+                                                            "AND", "CAST", "TIMESTAMP", "ARRAY", "ARRAY_AGG"};
 
 
 std::string static parseQuery(std::string_view query_str)

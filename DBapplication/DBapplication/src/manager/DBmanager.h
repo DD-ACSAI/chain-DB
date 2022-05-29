@@ -44,7 +44,8 @@ enum class DBcontext : char {
 	QUERY_TOOL,
 	WK_QUERIES,
 	PATHFINDER,
-	ROUTE_CHECKER
+	ROUTE_CHECKER,
+	SHIPMENT
 };
 
 #define AS_STR(X) std::string(X)
@@ -54,14 +55,13 @@ class DBmanager
 public:
 
 	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), 
-		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries", "Pathfinder Utility", "See Routes"}), selected_menu_opt(0), pather(conn, res)
+		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries", "Pathfinder Utility", "See Routes", "Schedule Shipments"}), selected_menu_opt(0), pather(conn, res)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
 		using lint = int64_t;
 
 		well_knowns.reserve(32);
-
 
 
 		std::vector<std::string> schemas(12);
@@ -189,7 +189,7 @@ public:
 
 			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Parked Vehicles",
 				"WITH temp_vals (time_start, time_end, depot) as ("
-				"values (TIMESTAMP \'%\', TIMESTAMP \'%\', %)"
+				"values (TIMESTAMP %, TIMESTAMP %, CAST(% AS integer))"
 				")"
 				"SELECT \"Vehicle\".*"
 				" FROM \"Ticket\" JOIN \"Vehicle\" ON (\"Vehicle\".\"ID\" = \"Ticket\".\"VehicleCode\"), temp_vals"
@@ -198,7 +198,7 @@ public:
 				" \"Ticket\".\"TimeOut\" < temp_vals.time_end OR NOT \"Ticket\".\"isExpired\" AND"
 				" CURRENT_TIMESTAMP < temp_vals.time_end);"));
 
-			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Param Going through",
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Routes Through a Place",
 				"SELECT *"
 				" FROM \"Client\""
 				" WHERE \"Client\".\"CompanyCode\" IN ("
@@ -207,10 +207,10 @@ public:
 				" WHERE EXISTS ( SELECT *"
 				"FROM \"Place\""
 				"WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
-				"AND \"Place\".\"Name\" = \'%\'))"
+				"AND \"Place\".\"Name\" = %))"
 				));
 
-			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Param Model transport",
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Models Transporting Something",
 				"SELECT *"
 				" FROM \"Model\" as md"
 				" WHERE md.\"Type\" = % AND EXISTS ("
@@ -226,15 +226,12 @@ public:
 				"WHERE \"Cargo\".\"ProdCode\" IN ("
 				"SELECT \"Product\".\"ID\""
 				"FROM \"Product\""
-				"WHERE \"Product\".\"Name\" = \'%\'))))"
+				"WHERE \"Product\".\"Name\" = %))))"
 				));
 
 			//QUERIES
 
-			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
-			well_knowns.emplace_back(std::make_unique<Query>("Find all Clients based in Rome", "SELECT * FROM \"Client\" WHERE \"Client\".\"CompanyCode\""
-				"IN( SELECT \"Shipment\".\"ClientCode\" FROM \"Shipment\" JOIN \"Crossing\" as cr ON(\"Shipment\".\"ID\" = cr.\"ShipmentCode\")"
-				"WHERE EXISTS( SELECT * FROM \"Place\" WHERE(\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\") AND \"Place\".\"Name\" = 'Rome'))"));
+
 		}
 		
 		well_knowns.shrink_to_fit();
@@ -345,6 +342,10 @@ public:
 			printUtil.updateHeader("Client Route Checker");
 			CLprinter::showCursor(true);
 			handleRouteChecker();
+		case DBcontext::SHIPMENT:
+			printUtil.updateHeader("Shipment Scheduler");
+			CLprinter::showCursor(true);
+			handleShipments();
 		default:
 			break;
 		}
@@ -570,8 +571,7 @@ public:
 				continue;
 			}
 
-			outBuf << "SELECT coi.\"Name\", coi.\"ID\", coi.\"Type\" FROM public.\"Company\" as comp, public.\"Client\" as cl, public.\"CenterOfInterest\" as coi WHERE coi.\"CompanyCode\" = comp.\"ID\" AND comp.\"ID\" ="
-				<< code << "AND " << code << " = cl.\"CompanyCode\"";
+			outBuf << "SELECT coi.\"Name\", coi.\"ID\", coi.\"Type\" FROM public.\"CenterOfInterest\" as coi WHERE coi.\"CompanyCode\" = " << code;
 
 			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
 			{
@@ -619,6 +619,126 @@ public:
 			std::cin >> code;
 
 
+
+			std::system("CLS");
+			printUtil.printHeader();
+			outBuf.str(std::string());
+
+		}
+
+	EXIT:
+		setState(DBcontext::MAIN_MENU);
+		refreshScreen();
+	}
+
+	void handleShipments()
+	{
+
+		using cargoelem = std::pair<std::int64_t, std::int64_t>;
+
+		std::string code;
+		std::string coi;
+		std::string route;
+		outBuf.str(std::string());
+		std::vector<cargoelem> elem_list;
+
+		for (;;)
+		{
+			std::system("CLS");
+			printUtil.printHeader();
+
+			std::cout << "Hello, insert the code of your company in order to see your routes." << std::endl;
+			std::cin >> code;
+
+			outBuf.str(std::string());
+
+			outBuf << "SELECT coi.\"Name\", coi.\"ID\", coi.\"Type\" FROM public.\"CenterOfInterest\" as coi WHERE coi.\"CompanyCode\" = " << code;
+
+			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
+			{
+				std::cout << "Your company has no Centers of Interest in our system" << std::endl;
+				outBuf.str(std::string());
+				continue;
+			}
+
+			std::cout << "The Centers of Interest from where you operate are: " << std::endl;
+			printUtil.printTable(res);
+			PQclear(res);
+			outBuf.str(std::string());
+
+
+			std::cout << "Select one of your Centers of Interest from which to start your shipment: " << std::endl;
+
+			std::cin >> coi;
+
+			outBuf << "SELECT * FROM public.\"Route\" as ro WHERE ro.\"FromCode\" =" << coi;
+
+			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
+			{
+				std::cout << "We're sorry, that Center of Interest has no routes originating from it" << std::endl;
+
+			}
+
+			printUtil.printTable(res);
+			PQclear(res);
+			outBuf.str(std::string());
+
+			std::cout << "Select which routes your shipment should follow: " << std::endl;
+
+			std::cin >> route;
+
+			std::cout << "Your selected Center of Interest has this stock: " << std::endl;
+
+			outBuf << "SELECT *" <<
+				" FROM \"Stock\" JOIN \"Product\" ON(\"Stock\".\"ProdCode\" = \"Product\".\"ID\")" <<
+				" WHERE \"Stock\".\"CoICode\" = " << coi;
+
+			
+
+			{
+				std::string itemcode;
+				std::string quantity;
+
+				std::cout << "Insert the items that you want to ship (code, quantity), type \'stop\' or nothing to stop" << std::endl;
+				for (;;)
+				{
+
+					std::cout << "Insert Item Code: ";
+					std::cin >> itemcode;
+
+					if (itemcode.empty() || itemcode == "stop") break;
+
+					cargoelem tup;
+					tup.first = _strtoi64(itemcode.c_str(), nullptr, 10);
+
+					std::cout << "Insert Quantity: ";
+					std::cin >> quantity;
+
+					if (quantity.empty() || quantity == "stop") break;
+					tup.second = _strtoi64(quantity.c_str(), nullptr, 10);
+
+					while (tup.second <= 0)
+					{
+						std::cout << "Quantity can't be negative, Insert Quantity: ";
+						std::cin >> quantity;
+
+						if (quantity.empty() || quantity == "stop") goto STOP_FOR;
+						tup.second = _strtoi64(quantity.c_str(), nullptr, 10);
+					}
+
+					elem_list.push_back(tup);
+
+				}
+			STOP_FOR: 
+
+				if (elem_list.empty()) continue;
+				
+				for (auto const& [icode, qty] : elem_list)
+				{
+
+				}
+
+			} 
 
 			std::system("CLS");
 			printUtil.printHeader();
@@ -842,6 +962,10 @@ public:
 				{
 					setState(DBcontext::MAIN_MENU);
 				}
+				else if (selected_menu_opt == 5)
+				{
+					setState(DBcontext::SHIPMENT);
+				}
 			case ESC_KEY:
 				//Find a way to kill the program
 				break;
@@ -890,7 +1014,7 @@ private:
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
 	int64_t selected_wk;
 
-	std::array<std::string, 5> menu_options;
+	std::array<std::string, 6> menu_options;
 	int64_t selected_menu_opt;
 	Pathfinder pather;
 };

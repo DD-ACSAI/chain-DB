@@ -54,8 +54,10 @@ public:
 			std::cin >> parameter;
 			std::cout << '\b' << "\33[2K\r";
 
-			querybuilder << " " << parameter << " " << split_str.front();
+			querybuilder << " \'" << parameter << "\' " << split_str.front();
 		}
+
+		std::cout << " Final query is:\n" << query::parseQuery(querybuilder.str()) << std::endl;
 
 		if (!(query::atomicQuery(querybuilder.str().c_str(), res, conn)))
 		{
