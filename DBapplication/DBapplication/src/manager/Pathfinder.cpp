@@ -48,12 +48,13 @@ namespace paths
 }
 
 
-void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
+void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client)
 {
 
 	/* We set our Priority Queue*/
 	static auto cmp = [](paths::destination const& left, paths::destination const& right) { return (left.distance + left.heuristic) > (right.distance + right.heuristic); };
 	static std::priority_queue < paths::destination, std::vector<paths::destination>, decltype(cmp)> queue(cmp);
+	while (!queue.empty()) queue.pop();
 
 	/*
 	
@@ -61,20 +62,33 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 	
 	*/
 	static std::stringstream querybuilder;
-
-
 	querybuilder << "SELECT \"CenterOfInterest\".\"PlaceCode\" FROM public.\"CenterOfInterest\" WHERE \"CenterOfInterest\".\"ID\" = " << from_code << ";";
 
-	query::atomicQuery(querybuilder.str().c_str(), res, conn);
-	querybuilder.str(std::string());
+	if (!(query::atomicQuery(querybuilder.str().c_str(), res, conn) && PQntuples(res) > 0))
+	{
+		std::cerr << "The first Center of Interest does not exist, aborting!" << std::endl;
+		PQclear(res);
+		querybuilder.str(std::string());
+		return;
+	}
 
 	const auto placecode_from = std::string(PQgetvalue(res, 0, 0));
 	std::unordered_set<int64_t> reached{ _strtoi64(placecode_from.c_str(), nullptr, 10) };
+	query::atomicQuery(querybuilder.str().c_str(), res, conn);
+	querybuilder.str(std::string());
+
 	PQclear(res);
 
 	querybuilder << "SELECT \"CenterOfInterest\".\"PlaceCode\" FROM public.\"CenterOfInterest\" WHERE \"CenterOfInterest\".\"ID\" = " << to_code << ";";
 
-	query::atomicQuery(querybuilder.str().c_str(), res, conn);
+	if (!(query::atomicQuery(querybuilder.str().c_str(), res, conn) && PQntuples(res) > 0))
+	{
+		std::cerr << "The second Center of Interest does not exist, aborting!" << std::endl;
+		PQclear(res);
+		querybuilder.str(std::string());
+		return;
+	}
+
 	querybuilder.str(std::string());
 
 	const auto placecode_to = std::string(PQgetvalue(res, 0, 0));
@@ -82,14 +96,8 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 
 	std::vector<paths::destination> destinations;
 
-	querybuilder << "SELECT * FROM \"Connection\" WHERE \"Connection\".\"PlaceA\" = " << placecode_from << "; ";
-
-	query::atomicQuery(querybuilder.str().c_str(), res, conn);
-	querybuilder.str(std::string());
-
 	//Utility printer
 	CLprinter printer;
-	printer.printTable(res);
 
 	queue.emplace(paths::CAR, _strtoi64(placecode_from.c_str(), nullptr, 10), _strtoi64(placecode_from.c_str(), nullptr, 10), 0.0, 0.0, 0.0);
 
@@ -107,7 +115,18 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 		
 		querybuilder << "SELECT * FROM \"Connection\" WHERE \"Connection\".\"PlaceA\" = " << explored.top().to << "; ";
 
-		query::atomicQuery(querybuilder.str().c_str(), res, conn);
+		if (!(query::atomicQuery(querybuilder.str().c_str(), res, conn)))
+		{
+			std::cerr << "An error has occurred while expanding the frontier in our A* algorithm!" << std::endl;
+			PQclear(res);
+			querybuilder.str(std::string());
+			while (!queue.empty()) queue.pop();
+			while (!explored.empty()) explored.pop();
+			destinations.clear();
+			reached.clear();
+			return;
+		}
+
 		querybuilder.str(std::string());
 		destinations.clear();
 		findConnections(res, destinations);
@@ -135,14 +154,22 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 
 	// Reconstruct
 	if (explored.empty()) {
-		// Print something
+		std::cerr << "A* Failed to explore any node!" << std::endl;
+		querybuilder.str(std::string());
+		destinations.clear();
+		PQclear(res);
 		return;
 	}
 
 	path.emplace_back(explored.top());
 
 	if (path.back().to != _strtoi64(placecode_to.c_str(), nullptr, 10)) {
-		// Print something
+		std::cerr << "For some reason A* did not return a path with our beginning as the first node\n something went horribly wrong, terminating." << std::endl;
+		querybuilder.str(std::string());
+		while (!explored.empty()) explored.pop();
+		destinations.clear();
+		reached.clear();
+		PQclear(res);
 		return;
 	}
 
@@ -155,7 +182,11 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 	}
 
 	if (path.back().from != _strtoi64(placecode_from.c_str(), nullptr, 10)) {
-		// Something went really wrong!
+		std::cerr << "For some reason after retrieveing it from A*, our path did not begin with the first node\n something went horribly wrong, terminating." << std::endl;
+		querybuilder.str(std::string());
+		destinations.clear();
+		reached.clear();
+		PQclear(res);
 		return;
 	}
 
@@ -164,18 +195,16 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code)
 
 	size_t i = 0;
 
-#ifdef _DEBUG	
-for (auto const& node : path)
-	{
-		std::cout << "(" << i++ << "): " << node.from << " " << node.to << " " << node.distance << std::endl;
-	}
-#endif // _DEBUG
 
-
+	std::cout << " Chosen path is: " << std::endl;
+	for (auto const& node : path)
+		{
+			std::cout << " (" << i++ << "): " << node.from << " " << node.to << " " << node.distance << std::endl;
+		}
 
 	//We inject this route!
 	querybuilder.str(std::string());
-	querybuilder << "CALL \"Inject Route\"(" << from_code << ", " << to_code << ", 5, ";
+	querybuilder << "SELECT * FROM \"inject_route\"(" << from_code << ", " << to_code << ", "<<  client <<", ";
 
 	std::stringstream arr1;
 	std::stringstream arr2;
@@ -219,17 +248,42 @@ for (auto const& node : path)
 	std::string arr3_str = arr3.str();
 	arr3_str.erase(arr3_str.size() - 4, 2);
 
-	std::cout << arr1_str << std::endl << arr2_str << std::endl << arr3_str;
-
 	querybuilder << arr1_str << ", " << arr2_str << ", " << arr3_str << ")";
 
-	query::atomicQuery(querybuilder.str().c_str(), res, conn);
+	
+	int64_t ID = 0;
+	if (query::atomicQuery(querybuilder.str().c_str(), res, conn) && PQntuples(res) > 0)
+	{
+		ID = _strtoi64(PQgetvalue(res, 0, 0), nullptr, 10);
+	}
+	else
+	{
+		std::cerr << "\n An error has occurred on the Database while injecting the route, check the stack-trace for more info." << std::endl;
+		querybuilder.str(std::string());
+		destinations.clear();
+		reached.clear();
+		PQclear(res);
+		return;
+	}
+	
 	PQclear(res);
+	querybuilder.str(std::string());
 
-	query::atomicQuery("SELECT * FROM public.\"Contains\" WHERE \"Contains\".\"RouteCode\" = 5 ORDER BY \"Contains\".\"Order\"", res, conn);
-	printer.printTable(res);
+	querybuilder << "SELECT * FROM public.\"Contains\" WHERE \"Contains\".\"RouteCode\" = " << ID << "ORDER BY \"Contains\".\"Order\"";
+
+	if (query::atomicQuery(querybuilder.str().c_str(), res, conn) && PQntuples(res) > 0)
+	{
+		std::cout << "\n A summary of the route (in terms of places):" << std::endl;
+		printer.printTable(res);
+	}
+	else
+	{
+		std::cerr << "\n Application was unable to fetch route that was just inserted, yikes!" << std::endl;
+	}
+
 	PQclear(res);
 
 	querybuilder.str(std::string());
+	reached.clear();
 	destinations.clear();
 }

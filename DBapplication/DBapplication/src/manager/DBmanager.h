@@ -27,6 +27,7 @@
 #include "queries/Procedure.h"
 #include "queries/Function.h"
 #include "queries/Query.h"
+#include "queries/ParametrizedQuery.h"
 
 // I\O stuff
 #include <iostream>
@@ -42,7 +43,8 @@ enum class DBcontext : char {
 	TABLE_VIEW,
 	QUERY_TOOL,
 	WK_QUERIES,
-	PATHFINDER
+	PATHFINDER,
+	ROUTE_CHECKER
 };
 
 #define AS_STR(X) std::string(X)
@@ -52,7 +54,7 @@ class DBmanager
 public:
 
 	explicit DBmanager(PGconn*& connection) : res(nullptr), conn(connection), selected_dir(0, 0, 0), 
-		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries", "Pathfinder Utility"}), selected_menu_opt(0), pather(conn, res)
+		curPos(0), selected_wk(0), menu_options({ "Show Directory Tree", "Query Tool", "Well Known Queries", "Pathfinder Utility", "See Routes"}), selected_menu_opt(0), pather(conn, res)
 	{
 		root = Dbnode<NODE::ROOT>("ROOT");
 		using uint = uint64_t;
@@ -114,17 +116,8 @@ public:
 				}
 			}
 
-			{  //Functions
-
-				{//Check Stock
-
-					std::array<string_tup, 1> argn{
-						std::make_pair(AS_STR("coi_code"), AS_STR("int"))
-					};
-
-					well_knowns.emplace_back(std::make_unique<Function<1>>("Check Stock", "check_stock", argn));
-
-				}
+			//FUNCTIONS
+			{  
 
 				{//Find Connection Frequency
 
@@ -138,16 +131,6 @@ public:
 
 				}
 
-				{//Find Company Models
-
-					std::array<string_tup, 1> argn{
-						std::make_pair(AS_STR("Company Code"), AS_STR("int"))
-					};
-
-					well_knowns.emplace_back(std::make_unique<Function<1>>("FindCompany Models", "find_models", argn));
-
-				}
-
 				{//Find Route Frequency
 
 					std::array<string_tup, 1> argn{
@@ -155,16 +138,6 @@ public:
 					};
 
 					well_knowns.emplace_back(std::make_unique<Function<1>>("Find Route Frequency", "find_route_frequency", argn));
-
-				}
-
-				{//Get Client Shipments
-
-					std::array<string_tup, 1> argn{
-						std::make_pair(AS_STR("Client Code"), AS_STR("int"))
-					};
-
-					well_knowns.emplace_back(std::make_unique<Function<1>>("Get Client Frequency", "get_all_shipments", argn));
 
 				}
 
@@ -198,9 +171,23 @@ public:
 
 				}
 
-
 			}
 
+			//PARAMETRIZED QUERIES
+
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Find Company Models", "SELECT DISTINCT \"Model\".*"
+				" FROM \"Vehicle\" JOIN \"Model\" ON(\"Vehicle\".\"ModelCode\" = \"Model\".\"ID\" AND \"Vehicle\".\"Type\" = \"Model\".\"Type\")"
+				" WHERE \"Vehicle\".\"Owner\" = %" ));
+
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Check Stock", "SELECT *"
+				" FROM \"Stock\" JOIN \"Product\" ON(\"Stock\".\"ProdCode\" = \"Product\".\"ID\")"
+				" WHERE \"Stock\".\"CoICode\" = %"));
+
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Client Shipments", "SELECT *"
+				" FROM public.\"ShipmentWhole\""
+				" WHERE \"ShipmentWhole\".\"Shipment\".\"ClientCode\" = \"client_code\""));
+
+			//QUERIES
 
 			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
 			well_knowns.emplace_back(std::make_unique<Query>("Find all Clients based in Rome", "SELECT * FROM \"Client\" WHERE \"Client\".\"CompanyCode\""
@@ -309,8 +296,13 @@ public:
 			break;
 		case DBcontext::PATHFINDER:
 			printUtil.updateHeader("Best-Route Pathfinder");
-			CLprinter::showCursor(false);
+			CLprinter::showCursor(true);
 			handlePathfinder();
+			break;
+		case DBcontext::ROUTE_CHECKER:
+			printUtil.updateHeader("Client Route Checker");
+			CLprinter::showCursor(true);
+			handleRouteChecker();
 		default:
 			break;
 		}
@@ -501,8 +493,100 @@ public:
 
 	void handlePathfinder()
 	{
-		pather.pathfind(8, 5);
-		_getch();
+
+		std::string coi_one;
+		std::string coi_two;
+		std::string code;
+
+		for (;;)
+		{
+			std::system("CLS");
+			printUtil.printHeader();
+
+			std::cout << "\n Welcome!\n Please insert your client code: ";
+			std::cin >> code;
+
+			if (code == "exit") break;
+
+			std::system("CLS");
+			printUtil.printHeader();
+			outBuf.str(std::string());
+
+			outBuf << "SELECT co.\"Name\" FROM public.\"Company\" as co, public.\"Client\" as cl WHERE co.\"ID\" = " << code << "  AND cl.\"CompanyCode\" =" << code;
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				std::cout << "\n Welcome " << color::FIELD << PQgetvalue(res, 0, 0) << color::RESET << std::endl;
+				PQclear(res);
+				outBuf.str(std::string());
+			}
+			else
+			{
+				std::cout << "\n Your company is not registered, goodbye!" << std::endl;
+				PQclear(res);
+				_getch();
+				continue;
+			}
+
+			outBuf << "SELECT coi.\"Name\", coi.\"ID\", coi.\"Type\" FROM public.\"Company\" as comp, public.\"Client\" as cl, public.\"CenterOfInterest\" as coi WHERE coi.\"CompanyCode\" = comp.\"ID\" AND comp.\"ID\" ="
+				<< code << "AND " << code << " = cl.\"CompanyCode\"";
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				std::cout << "\n\n A list of your currently registered Centers of Interest to aid you in choosing the endpoints: " << std::endl;
+				printUtil.printTable(res);
+				PQclear(res);
+			}
+			else
+			{
+				std::cout << "\n\n Something has gone wrong while fetching your CoIs, restarting!" << std::endl;
+				PQclear(res);
+				_getch();
+				continue;
+			}
+
+			std::cout << "\n Insert the code of the Center of Interest from which to start pathing: ";
+			std::cin >> coi_one;
+
+			std::cout << "\n Insert the code of the Center of Interest to reach: ";
+			std::cin >> coi_two;
+
+			std::cout << "\n Pathing...\n" << std::endl;
+			pather.pathfind(_strtoi64(coi_one.c_str(), nullptr, 10), _strtoi64(coi_two.c_str(), nullptr, 10), _strtoi64(code.c_str(), nullptr, 10));
+			
+			auto c = parseKey(_getch());
+
+			if (c == ESC_KEY) break;
+
+		}
+		setState(DBcontext::MAIN_MENU);
+		refreshScreen();
+	}
+
+	void handleRouteChecker()
+	{
+		std::string code;
+		outBuf.str(std::string());
+
+		for (;;)
+		{
+			std::system("CLS");
+			printUtil.printHeader();
+
+			std::cout << "Hello, insert the code of your company in order to see your routes." << std::endl;
+			std::cin >> code;
+
+
+
+			std::system("CLS");
+			printUtil.printHeader();
+			outBuf.str(std::string());
+
+		}
+
+	EXIT:
+		setState(DBcontext::MAIN_MENU);
+		refreshScreen();
 	}
 
 	void refreshScreen()
@@ -712,7 +796,10 @@ public:
 				{
 					setState(DBcontext::PATHFINDER);
 				}
-
+				else if (selected_menu_opt == 4)
+				{
+					setState(DBcontext::MAIN_MENU);
+				}
 			case ESC_KEY:
 				//Find a way to kill the program
 				break;
@@ -761,7 +848,7 @@ private:
 	std::vector<std::unique_ptr<WKQuery>> well_knowns;
 	int64_t selected_wk;
 
-	std::array<std::string, 4> menu_options;
+	std::array<std::string, 5> menu_options;
 	int64_t selected_menu_opt;
 	Pathfinder pather;
 };

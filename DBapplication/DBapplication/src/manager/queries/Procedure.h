@@ -71,7 +71,7 @@ public:
 	void execute(PGresult*& res, PGconn*& conn) override 
 	{
 
-		std::cout << "Executing Procedure " << parsed_name << ", Awaiting user input : \n\n";
+		std::cout << " Executing Procedure " << parsed_name << ", Awaiting user input : \n\n";
 
 
 		size_t i = 0;
@@ -98,7 +98,7 @@ public:
 		query_built.erase(query_built.size() - 3, 2);
 
 		if (query::atomicQuery(query_built.c_str(), res, conn))
-			std::cout << "\nProcedure \"" << parsed_name << "\" correctly executed!" << "\n";
+			std::cout << "\n Procedure \"" << parsed_name << "\" correctly executed!" << "\n";
 	}
 
 
