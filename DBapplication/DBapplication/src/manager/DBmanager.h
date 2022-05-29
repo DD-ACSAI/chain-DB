@@ -184,8 +184,19 @@ public:
 				" WHERE \"Stock\".\"CoICode\" = %"));
 
 			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Client Shipments", "SELECT *"
-				" FROM public.\"ShipmentWhole\""
-				" WHERE \"ShipmentWhole\".\"Shipment\".\"ClientCode\" = \"client_code\""));
+				" FROM \"ShipmentWhole\""
+				" WHERE \"ShipmentWhole\".\"client\" = %"));
+
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Parked Vehicles",
+				"WITH temp_vals (time_start, time_end, depot) as ("
+				"values (TIMESTAMP \'%\', TIMESTAMP \'%\', %)"
+				")"
+				"SELECT \"Vehicle\".*"
+				" FROM \"Ticket\" JOIN \"Vehicle\" ON (\"Vehicle\".\"ID\" = \"Ticket\".\"VehicleCode\"), temp_vals"
+				" WHERE \"Ticket\".\"PlaceCode\" = temp_vals.depot AND"
+				" \"Ticket\".\"TimeIn\" >= temp_vals.time_start AND ("
+				" \"Ticket\".\"TimeOut\" < temp_vals.time_end OR NOT \"Ticket\".\"isExpired\" AND"
+				" CURRENT_TIMESTAMP < temp_vals.time_end);"));
 
 			//QUERIES
 
