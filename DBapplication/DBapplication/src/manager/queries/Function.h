@@ -67,7 +67,7 @@ public:
 	void execute(PGresult*& res, PGconn*& conn) override
 	{
 
-		std::cout << "Executing Function " << parsed_name << ", Awaiting user input : \n\n";
+		std::cout << " Executing Function " << parsed_name << ", Awaiting user input : \n\n";
 
 
 		size_t i = 0;
@@ -85,7 +85,7 @@ public:
 
 		for (auto const& par : args)
 		{
-			query << par + ", ";
+			query << "\'" << par << "\'" << ", ";
 		}
 
 		query << ")";
@@ -94,7 +94,7 @@ public:
 		query_built.erase(query_built.size() - 3, 2);
 
 		if (query::atomicQuery(query_built.c_str(), res, conn))
-			std::cout << "\Function \"" << parsed_name << "\" correctly executed!" << "\n";
+			std::cout << " Function \"" << parsed_name << "\" correctly executed!" << "\n";
 
 
 		printer.printTable(res);

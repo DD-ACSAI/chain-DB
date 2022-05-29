@@ -180,6 +180,7 @@
   <ItemGroup>
     <ClInclude Include="src\manager\Pathfinder.h" />
     <ClInclude Include="src\manager\queries\Function.h" />
+    <ClInclude Include="src\manager\queries\ParametrizedQuery.h" />
     <ClInclude Include="src\manager\queries\Procedure.h" />
     <ClInclude Include="src\manager\queries\Query.h" />
     <ClInclude Include="src\manager\queries\WKQuery.h" />

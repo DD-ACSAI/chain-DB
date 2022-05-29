@@ -48,10 +48,8 @@ static bool beginTransaction(PGconn* const& connection)
         std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << "\n";
 
 #endif // DEBUG
-        PQclear(res);
         return false;
     }
-    PQclear(res);
     return true;
 }
 
@@ -70,7 +68,6 @@ static bool endTransaction(PGconn* const& connection)
         std::cerr << "BEGIN command failed: " << PQerrorMessage(connection) << "\n";
 
 #endif
-        PQclear(res);
         return false;
     }
     PQclear(res);
@@ -90,9 +87,7 @@ static bool executeQuery(const char* query, PGresult*& res, PGconn* const& conne
 {
     res = PQexec(connection, query);
 
-    auto status = PQresultStatus(res);
-
-    if (statusFailed(status) || res == nullptr)
+    if (auto status = PQresultStatus(res); statusFailed(status) || res == nullptr)
     {
         std::cerr << "Query failed: " << PQerrorMessage(connection) << "\n";
 
@@ -102,7 +97,6 @@ static bool executeQuery(const char* query, PGresult*& res, PGconn* const& conne
         std::cerr << "Query was: " << query << "\n";
 #endif // DEBUG
 
-        PQclear(res);
         return false;
     }
     return true;
