@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <typeinfo>
 #include <vector>
+#include <map>
+#include <unordered_set>
 #include <array>
 #include <utility>
 #include <unordered_set>
@@ -650,13 +652,33 @@ public:
 			std::cout << "Hello, insert the code of your company in order to see your routes." << std::endl;
 			std::cin >> code;
 
+			if (code == "exit") break;
+
+			outBuf.str(std::string());
+
+			outBuf << "SELECT co.\"Name\" FROM public.\"Company\" as co, public.\"Client\" as cl WHERE co.\"ID\" = " << code << "  AND cl.\"CompanyCode\" =" << code;
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				std::cout << "\n Welcome " << color::FIELD << PQgetvalue(res, 0, 0) << color::RESET << std::endl;
+				PQclear(res);
+				outBuf.str(std::string());
+			}
+			else
+			{
+				std::cout << "\n Your company is not registered, goodbye!" << std::endl;
+				PQclear(res);
+				_getch();
+				continue;
+			}
+
 			outBuf.str(std::string());
 
 			outBuf << "SELECT coi.\"Name\", coi.\"ID\", coi.\"Type\" FROM public.\"CenterOfInterest\" as coi WHERE coi.\"CompanyCode\" = " << code;
 
 			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
 			{
-				std::cout << "Your company has no Centers of Interest in our system" << std::endl;
+				std::cout << "Alas, your company has no Centers of Interest in our system" << std::endl;
 				outBuf.str(std::string());
 				continue;
 			}
@@ -671,12 +693,13 @@ public:
 
 			std::cin >> coi;
 
-			outBuf << "SELECT * FROM public.\"Route\" as ro WHERE ro.\"FromCode\" =" << coi;
+			outBuf << "SELECT ro.\"ID\", ro.\"ToCode\" FROM public.\"Route\" as ro JOIN public.\"ViewPrivilege\" as vi ON (ro.\"ID\" = vi.\"RouteCode\") WHERE ro.\"FromCode\" =" << coi << " AND vi.\"CompCode\" =" << code;
 
 			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
 			{
 				std::cout << "We're sorry, that Center of Interest has no routes originating from it" << std::endl;
-
+				outBuf.str(std::string());
+				continue;
 			}
 
 			printUtil.printTable(res);
@@ -689,16 +712,37 @@ public:
 
 			std::cout << "Your selected Center of Interest has this stock: " << std::endl;
 
-			outBuf << "SELECT *" <<
+			outBuf << "SELECT \"Product\".\"Name\", \"Product\".\"ID\", \"Stock\".\"Qty\"" <<
 				" FROM \"Stock\" JOIN \"Product\" ON(\"Stock\".\"ProdCode\" = \"Product\".\"ID\")" <<
 				" WHERE \"Stock\".\"CoICode\" = " << coi;
 
+			std::map<int64_t, int64_t> productQuantities;
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				size_t nRows = PQntuples(res);
+
+				for (size_t i_prod = 0; i_prod < nRows; i_prod++) {
+
+					int64_t prod_id = _strtoi64(PQgetvalue(res, i_prod, 1), nullptr, 10);
+					int64_t prod_qty = _strtoi64(PQgetvalue(res, i_prod, 2), nullptr, 10);
+					productQuantities.insert_or_assign(prod_id, prod_qty);
+				}
+
+				printUtil.printTable(res);
+				PQclear(res);
+				outBuf.str(std::string());
+			} else {
+				std::cout << "We're sorry, that Center of Interest's stocks are empty" << std::endl;
+				outBuf.str(std::string());
+				continue;
+			}
 			
 
 			{
 				std::string itemcode;
 				std::string quantity;
-
+				std::unordered_set<int64_t> already_selected;
 				std::cout << "Insert the items that you want to ship (code, quantity), type \'stop\' or nothing to stop" << std::endl;
 				for (;;)
 				{
@@ -711,39 +755,98 @@ public:
 					cargoelem tup;
 					tup.first = _strtoi64(itemcode.c_str(), nullptr, 10);
 
-					std::cout << "Insert Quantity: ";
+					while (productQuantities.find(tup.first) == productQuantities.end() || already_selected.find(tup.first) != already_selected.end()) {
+						std::cout << "Item code must be present or non-already selected, Insert Item Code: ";
+						std::cin >> itemcode;
+
+						if (itemcode.empty() || itemcode == "stop") goto STOP_FOR;
+						tup.first = _strtoi64(itemcode.c_str(), nullptr, 10);
+					}
+
+					std::cout << "Insert Quantity (<=" << productQuantities[tup.first] << "): ";
 					std::cin >> quantity;
 
 					if (quantity.empty() || quantity == "stop") break;
 					tup.second = _strtoi64(quantity.c_str(), nullptr, 10);
 
-					while (tup.second <= 0)
+					while (tup.second <= 0 || tup.second > productQuantities[tup.first])
 					{
-						std::cout << "Quantity can't be negative, Insert Quantity: ";
+						std::cout << "Quantity can't be negative or greater than present, Insert Quantity (<=" << productQuantities[tup.first] << "): ";
 						std::cin >> quantity;
 
 						if (quantity.empty() || quantity == "stop") goto STOP_FOR;
 						tup.second = _strtoi64(quantity.c_str(), nullptr, 10);
 					}
 
+					already_selected.insert(tup.first);
 					elem_list.push_back(tup);
-
 				}
-			STOP_FOR: 
+			STOP_FOR: // KEK
 
 				if (elem_list.empty()) continue;
 				
+				outBuf.str(std::string());
+
+				outBuf << "Final selection for shipment: ";
+
 				for (auto const& [icode, qty] : elem_list)
 				{
-
+					outBuf << "(" << icode << ", " << qty << "), ";
 				}
 
+				std::string out_string = outBuf.str();
+				out_string.erase(out_string.size() - 2, 2);
+				
+				std::string input_res;
+				std::cout << out_string << std::endl;
+				std::cout << "Type (y)es if you want to continue, write else otherwise: ";
+				std::cin >> input_res;
+				
+				if (input_res != "y") continue;
 			} 
 
 			std::system("CLS");
 			printUtil.printHeader();
 			outBuf.str(std::string());
 
+			std::string input_res;
+			std::cout << "Great! Then we shall follow with selecting the vehicles, do you wish to visualize only those of your company? Type (y)es if so: ";
+			std::cin >> input_res;
+
+			bool priority_comp = (input_res == "y");
+
+
+			outBuf << "SELECT ct.\"PlaceACode\" as \"Place A\", ct.\"PlaceBCode\" as \"Place B\", ct.\"AllowedVehicle\"" <<
+				" FROM \"Contains\" as ct" <<
+				" WHERE ct.\"RouteCode\" = " << route <<
+				" ORDER BY ct.\"Order\" ASC";
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				// Store the result somewhere
+				printUtil.printTable(res);
+				PQclear(res);
+				outBuf.str(std::string());
+			}
+			else {
+				std::cout << "Something went wrong, the route has no Contains associated..." << std::endl;
+				std::string a;
+
+				std::cin >> a;
+				outBuf.str(std::string());
+				continue;
+			}
+
+			std::string a;
+
+			std::cin >> a;
+
+			// Go through the data somehow
+			/*size_t order = 0;
+			while (true) {
+				order += 1;
+
+			}*/
 		}
 
 	EXIT:
