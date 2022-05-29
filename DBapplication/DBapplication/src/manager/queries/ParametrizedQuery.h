@@ -49,7 +49,7 @@ public:
 
 		for (size_t n_param = 1; !split_str.empty(); split_str.pop())
 		{
-			std::cout << " Insert Query Parameter " << n_param << std::endl;
+			std::cout << " Insert Query Parameter " << n_param++ << std::endl;
 			std::cout << "\t" << query::parseQuery(querybuilder.str());
 			std::cin >> parameter;
 			std::cout << '\b' << "\33[2K\r";

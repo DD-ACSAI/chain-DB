@@ -198,6 +198,37 @@ public:
 				" \"Ticket\".\"TimeOut\" < temp_vals.time_end OR NOT \"Ticket\".\"isExpired\" AND"
 				" CURRENT_TIMESTAMP < temp_vals.time_end);"));
 
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Param Going through",
+				"SELECT *"
+				" FROM \"Client\""
+				" WHERE \"Client\".\"CompanyCode\" IN ("
+				" SELECT \"Shipment\".\"ClientCode\""
+				" FROM \"Shipment\" JOIN \"Crossing\" as cr ON (\"Shipment\".\"ID\" = cr.\"ShipmentCode\")"
+				" WHERE EXISTS ( SELECT *"
+				"FROM \"Place\""
+				"WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
+				"AND \"Place\".\"Name\" = \'%\'))"
+				));
+
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Param Model transport",
+				"SELECT *"
+				" FROM \"Model\" as md"
+				" WHERE md.\"Type\" = % AND EXISTS ("
+				" SELECT *"
+				" FROM \"Vehicle\""
+				" WHERE \"Vehicle\".\"ModelCode\" = md.\"ID\" AND \"Vehicle\".\"Type\" = md.\"Type\""
+				"AND \"Vehicle\".\"ID\" IN ("
+				"SELECT \"Crossing\".\"VehicleCode\""
+				"FROM \"Crossing\""
+				"WHERE \"Crossing\".\"ShipmentCode\" IN ("
+				"SELECT \"Shipment\".\"ID\""
+				"FROM \"Shipment\" JOIN \"Cargo\" ON (\"Shipment\".\"ID\" = \"Cargo\".\"ShipmentCode\")"
+				"WHERE \"Cargo\".\"ProdCode\" IN ("
+				"SELECT \"Product\".\"ID\""
+				"FROM \"Product\""
+				"WHERE \"Product\".\"Name\" = \'%\'))))"
+				));
+
 			//QUERIES
 
 			well_knowns.emplace_back(std::make_unique<Query>("Show Models", "SELECT * FROM public.\"Model\""));
