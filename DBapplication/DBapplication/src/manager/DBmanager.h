@@ -859,7 +859,7 @@ public:
 			}
 
 			VehicleType prev_type = CAR;
-			int64_t prev_id = NULL;
+			int64_t prev_id = -1;
 
 			std::vector<int64_t> chosen_ids;
 
@@ -868,6 +868,24 @@ public:
 			for (auto const& [placeA, placeB, vType] : contain) {
 				int64_t vehicle_val = -1;
 				bool use_current = false;
+				std::string str_vType = "";
+
+				switch (vType) {
+					case CAR:
+						str_vType = "\'Car\'";
+						break;
+					case SHIP:
+						str_vType = "\'Ship\'";
+						break;
+					case PLANE:
+						str_vType = "\'Plane\'";
+						break;
+					default:
+						std::cout << "What...";
+						_getch();
+						goto EXIT;
+				}
+
 				available_ids.clear();
 				if (!priority_comp) {
 					goto NO_PREF;
@@ -875,7 +893,7 @@ public:
 				outBuf << "SELECT *"
 					" FROM \"NotCurrentlyUsed\" as nsd"
 					" WHERE nsd.\"Depot\" =" << placeA <<
-					" AND nsd.\"Type\" =" << vType <<
+					" AND nsd.\"Type\" =" << str_vType <<
 					" AND nsd.\"Owner\" = " << comp_code;
 
 				if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
@@ -890,7 +908,7 @@ public:
 					PQclear(res);
 					outBuf.str(std::string());
 				} else {
-					std::cout << "Unfortunately there are no free and adequate vehicles of your company here, checking for others" << std::endl;
+					std::cout << "Unfortunately there are no free and adequate vehicles of your company here, checking for others..." << std::endl;
 
 					NO_PREF:
 					PQclear(res);
@@ -899,7 +917,7 @@ public:
 					outBuf << "SELECT *"
 						" FROM \"NotCurrentlyUsed\" as nsd"
 						" WHERE nsd.\"Depot\" =" << placeA <<
-						" AND nsd.\"Type\" =" << vType;
+						" AND nsd.\"Type\" =" << str_vType;
 					if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
 					{
 						size_t nRows = PQntuples(res);
@@ -913,12 +931,13 @@ public:
 						outBuf.str(std::string());
 					}
 					else {
-						std::cout << "Couldn't find any available vehicle at " << placeA << ", checking neighbors";
+						std::cout << "Couldn't find any available vehicle at " << placeA << ", checking neighbors..." << std::endl;
 						PQclear(res);
 						outBuf.str(std::string());
 						outBuf << "SELECT nsd.*"
 							"FROM \"NotCurrentlyUsed\" as nsd JOIN \"Connection\" as cn ON (nsd.\"Depot\" = cn.\"PlaceA\" AND nsd.\"Type\" = cn.\"AllowedVehicles\")"
-							"WHERE cn.\"PlaceB\" = " << placeA << " AND cn.\"AllowedVehicles\" = " << vType;
+							"WHERE cn.\"PlaceB\" = " << placeA << " AND cn.\"AllowedVehicles\" = " << str_vType <<
+							"AND nsd.\"ID\" <>" << prev_id;
 						if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
 						{
 							size_t nRows = PQntuples(res);
@@ -932,8 +951,8 @@ public:
 							outBuf.str(std::string());
 						}
 						else {
-							std::cout << "Couldn't even find at neighbors, this is really unlucky...";
-							if (prev_id != NULL && prev_type == vType) {
+							std::cout << "Couldn't even find at neighbors, this is really unlucky..." << std::endl;
+							if (prev_id != -1 && prev_type == vType) {
 								std::cout << "We can continue with the current vehicle though, type (y) to do that (or face failure)";
 								std::string choice;
 								std::cin >> choice;
@@ -950,7 +969,7 @@ public:
 					}
 				}
 
-				if (prev_id != NULL && prev_type == vType) {
+				if (prev_id != -1 && prev_type == vType) {
 					std::cout << "Alas you can continue with the current vehicle (type (c) to do so) or choose a listed vehicle: ";
 					std::string choice;
 					std::cin >> choice;
@@ -995,6 +1014,7 @@ public:
 				chosen_ids.push_back(prev_id);
 			}
 
+			outBuf.str(std::string());
 			outBuf << "Final selection for shipment: ";
 
 			for (auto const& vehid : chosen_ids)
@@ -1005,14 +1025,56 @@ public:
 			std::string out_string = outBuf.str();
 			out_string.erase(out_string.size() - 2, 2);
 
-			std::string input_res;
+			input_res = "";
 			std::cout << out_string << std::endl;
 			std::cout << "Type (y)es if you want to continue, write else otherwise: ";
 			std::cin >> input_res;
 
 			if (input_res != "y") continue;
 
-			// TODO finish the shipment
+			//FINISH THE SHIPMENT
+			outBuf.str(std::string());
+			outBuf << "CALL \"Create Shipment\"(" << route << ", ";
+
+			std::stringstream qtys;
+			std::stringstream prod_codes;
+			std::stringstream veh_codes;
+
+			qtys << "\'{";
+			prod_codes << "\'{";
+			veh_codes << "\'{";
+
+			for (auto const& [icode, qty] : elem_list)
+			{
+				qtys << qty << ", ";
+				prod_codes << icode << ", ";
+			}
+
+			for (auto const& veh_id : chosen_ids)
+			{
+				veh_codes << veh_id << ", ";
+			}
+
+			qtys << "}\'";
+			prod_codes << "}\'";
+			veh_codes << "}\'";
+
+			std::string qtys_str = qtys.str();
+			qtys_str.erase(qtys_str.size() - 4, 2);
+
+			std::string prod_str = prod_codes.str();
+			prod_str.erase(prod_str.size() - 4, 2);
+
+			std::string veh_str = veh_codes.str();
+			veh_str.erase(veh_str.size() - 4, 2);
+
+			outBuf << qtys_str << ", " << prod_str << ", " << comp_code << ", " << veh_str << ")";
+
+			query::atomicQuery(outBuf.str().c_str(), res, conn);
+
+			_getch();
+			outBuf.str(std::string());
+			break;
 		}
 
 	EXIT:
