@@ -48,7 +48,7 @@ namespace paths
 }
 
 
-void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client)
+void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client, short special_case)
 {
 
 	/* We set our Priority Queue*/
@@ -139,7 +139,29 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client)
 			query::atomicQuery(querybuilder.str().c_str(), res, conn);
 			querybuilder.str(std::string());
 
-			dest.heuristic = 1.6 * std::stod(PQgetvalue(res, 0, 0));
+			double mul = 1.0;
+
+			switch (special_case) {
+			case 1: // Prefer cars
+				if (dest.vehicle != paths::CAR) {
+					mul = 10.0;
+				}
+			case 2: // Discourage planes
+				if (dest.vehicle == paths::PLANE) {
+					mul = 100.0;
+				}
+			case 3: // Discourage ships
+				if (dest.vehicle == paths::SHIP) {
+					mul = 100.0;
+				}
+			case 4: // Less costly
+				mul = 1.0 + dest.fee * 100.0;
+			default:
+				break;
+			}
+
+			dest.heuristic = mul * 1.6 * std::stod(PQgetvalue(res, 0, 0));
+
 			if (reached.find(dest.to) == reached.end())
 			{
 				dest.distance += explored.top().distance;
@@ -201,6 +223,18 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client)
 		{
 			std::cout << " (" << i++ << "): " << node.from << " " << node.to << " " << node.distance << std::endl;
 		}
+
+	std::string input;
+	std::cout << " Do you wish to select this path (y)?" << std::endl;
+	std::cin >> input;
+
+	if (input != "y") {
+		querybuilder.str(std::string());
+		destinations.clear();
+		reached.clear();
+		PQclear(res);
+		return;
+	}
 
 	//We inject this route!
 	querybuilder.str(std::string());

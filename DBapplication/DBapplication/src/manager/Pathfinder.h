@@ -40,7 +40,7 @@ class Pathfinder
 public:
 
 	Pathfinder(PGconn*& conn, PGresult*& res) : conn(conn), res(res) {};
-	void pathfind(int64_t from_code, int64_t to_code, int64_t client);
+	void pathfind(int64_t from_code, int64_t to_code, int64_t client, short special_case=0);
 
 private:
 	PGconn* conn;

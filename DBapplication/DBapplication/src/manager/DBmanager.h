@@ -101,12 +101,11 @@ public:
 				}
 
 				{
-					std::array<string_tup, 2> argn{			//Delete Shipment
-						std::make_pair(AS_STR("Shipment Code"), AS_STR("int")),
-						std::make_pair(AS_STR("From Code"), AS_STR("int"))
+					std::array<string_tup, 1> argn{			//Delete Shipment
+						std::make_pair(AS_STR("Shipment Code"), AS_STR("int"))
 					};
 
-					well_knowns.emplace_back(std::make_unique<Procedure<2>>("Delete Shipment", "Delete shipment", argn));
+					well_knowns.emplace_back(std::make_unique<Procedure<1>>("Delete Shipment", "Delete shipment", argn));
 				}
 
 				{
@@ -344,10 +343,12 @@ public:
 			printUtil.updateHeader("Client Route Checker");
 			CLprinter::showCursor(true);
 			handleRouteChecker();
+			break;
 		case DBcontext::SHIPMENT:
 			printUtil.updateHeader("Shipment Scheduler");
 			CLprinter::showCursor(true);
 			handleShipments();
+			break;
 		default:
 			break;
 		}
@@ -595,8 +596,17 @@ public:
 			std::cout << "\n Insert the code of the Center of Interest to reach: ";
 			std::cin >> coi_two;
 
+			std::string selection;
+			std::cout << "\n Special options:\n    default/0: No special options\n    1: Prefer cars\n    2: Discourage Planes\n    3: Discourage Ships\n    4: Less costly"<< std::endl;
+			std::cin >> selection;
+
+			int64_t actual_selection = 0;
+			if (selection != "default") {
+				actual_selection = _strtoi64(selection.c_str(), nullptr, 10);
+			}
+
 			std::cout << "\n Pathing...\n" << std::endl;
-			pather.pathfind(_strtoi64(coi_one.c_str(), nullptr, 10), _strtoi64(coi_two.c_str(), nullptr, 10), _strtoi64(code.c_str(), nullptr, 10));
+			pather.pathfind(_strtoi64(coi_one.c_str(), nullptr, 10), _strtoi64(coi_two.c_str(), nullptr, 10), _strtoi64(code.c_str(), nullptr, 10), actual_selection);
 			
 			auto c = parseKey(_getch());
 
@@ -617,25 +627,112 @@ public:
 			std::system("CLS");
 			printUtil.printHeader();
 
+
 			std::cout << "Hello, insert the code of your company in order to see your routes." << std::endl;
 			std::cin >> code;
 
-
+			if (code == "exit") break;
 
 			std::system("CLS");
 			printUtil.printHeader();
 			outBuf.str(std::string());
 
+			outBuf << "SELECT co.\"Name\" FROM public.\"Company\" as co, public.\"Client\" as cl WHERE co.\"ID\" = " << code << "  AND cl.\"CompanyCode\" =" << code;
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				std::cout << "\n Welcome " << color::FIELD << PQgetvalue(res, 0, 0) << color::RESET << std::endl;
+				PQclear(res);
+				outBuf.str(std::string());
+			}
+			else
+			{
+				std::cout << "\n Your company is not registered, goodbye!" << std::endl;
+				PQclear(res);
+				_getch();
+				continue;
+			}
+
+			outBuf << "SELECT ro.* FROM \"Route\" as ro JOIN \"ViewPrivilege\" as view ON (ro.\"ID\" = view.\"RouteCode\")" <<
+					  "WHERE view.\"CompCode\" = " << code;
+
+			std::unordered_set<int64_t> route_codes;
+
+			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+			{
+				size_t nRows = PQntuples(res);
+
+				for (size_t route_i = 0; route_i < nRows; route_i++) {
+					route_codes.insert(_strtoi64(PQgetvalue(res, route_i, 0), nullptr, 10));
+				}
+
+				std::cout << "\n Here are your routes " << std::endl;
+				printUtil.printTable(res);
+				PQclear(res);
+				outBuf.str(std::string());
+			}
+			else
+			{
+				std::cout << "\n Your company doesn't have any routes with us, sorry!" << std::endl;
+				PQclear(res);
+				_getch();
+				continue;
+			}
+
+			std::cout << "Select which route you wish to inspect (from those listed above) or type \'stop\' or nothing to stop" << std::endl;
+
+			std::string selection;
+			int64_t route_id = NULL;
+
+			for (;;)
+			{
+
+				std::cout << "Insert Route Code: ";
+				std::cin >> selection;
+
+				if (selection.empty() || selection == "stop") break;
+
+				route_id = _strtoi64(selection.c_str(), nullptr, 10);
+				bool should_continue = true;
+
+				while ((route_codes.find(route_id) == route_codes.end()) && should_continue) {
+					std::cout << "Route code must be one of those showed, Insert Route Code: ";
+					std::cin >> selection;
+
+					should_continue = !(selection.empty() || selection == "stop");
+					route_id = _strtoi64(selection.c_str(), nullptr, 10);
+				}
+
+				if (!should_continue) break;
+
+				outBuf.str(std::string());
+
+				outBuf << "SELECT * FROM public.\"Contains\" WHERE \"Contains\".\"RouteCode\" = " << route_id << "ORDER BY \"Contains\".\"Order\"";
+
+				if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
+				{
+					std::cout << "\n A summary of the route (in terms of places):" << std::endl;
+					printUtil.printTable(res);
+					outBuf.str(std::string());
+				}
+				else
+				{
+					std::cerr << "\n Application was unable to fetch the route, yikes!" << std::endl;
+					PQclear(res);
+					_getch();
+					should_continue = false;
+				}
+
+				if (!should_continue) break;
+			}
 		}
 
-	EXIT:
 		setState(DBcontext::MAIN_MENU);
 		refreshScreen();
 	}
 
 	void handleShipments()
 	{
-
 		using cargoelem = std::pair<std::int64_t, std::int64_t>;
 
 		std::string comp_code;
@@ -649,7 +746,7 @@ public:
 			std::system("CLS");
 			printUtil.printHeader();
 
-			std::cout << "Hello, insert the code of your company in order to see your routes." << std::endl;
+			std::cout << "Hello, insert the code of your company in order to see your Centers of Interest." << std::endl;
 			std::cin >> comp_code;
 
 			if (comp_code == "exit") break;
@@ -825,13 +922,7 @@ public:
 				" ORDER BY ct.\"Order\" ASC";
 
 			// yes. i don't care. fight me.
-			enum VehicleType : char
-			{
-				PLANE = 1,
-				SHIP = 2,
-				CAR = 4
-			};
-			using passage = std::tuple<int64_t, int64_t, VehicleType>;
+			using passage = std::tuple<int64_t, int64_t, paths::VehicleType>;
 			std::vector<passage> contain;
 
 			if (query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0)
@@ -841,7 +932,7 @@ public:
 				for (size_t i = 0; i < nRows; i++) {
 	
 					auto vCode = std::string(PQgetvalue(res, i, 2));
-					VehicleType vType = (vCode == "Car") ? CAR : ((vCode == "Plane") ? PLANE : SHIP);
+					paths::VehicleType vType = (vCode == "Car") ? paths::CAR : ((vCode == "Plane") ? paths::PLANE : paths::SHIP);
 
 					// PlaceA, PlaceB and Vehicle
 					contain.emplace_back(_strtoi64(PQgetvalue(res, i, 0), nullptr, 10), _strtoi64(PQgetvalue(res, i, 1), nullptr, 10), vType);
@@ -858,7 +949,7 @@ public:
 				continue;
 			}
 
-			VehicleType prev_type = CAR;
+			paths::VehicleType prev_type = paths::CAR;
 			int64_t prev_id = -1;
 
 			std::vector<int64_t> chosen_ids;
@@ -866,18 +957,19 @@ public:
 			std::unordered_set<int64_t> available_ids;
 
 			for (auto const& [placeA, placeB, vType] : contain) {
+
 				int64_t vehicle_val = -1;
 				bool use_current = false;
 				std::string str_vType = "";
 
 				switch (vType) {
-					case CAR:
+					case paths::CAR:
 						str_vType = "\'Car\'";
 						break;
-					case SHIP:
+					case paths::SHIP:
 						str_vType = "\'Ship\'";
 						break;
-					case PLANE:
+					case paths::PLANE:
 						str_vType = "\'Plane\'";
 						break;
 					default:
@@ -909,9 +1001,8 @@ public:
 					outBuf.str(std::string());
 				} else {
 					std::cout << "Unfortunately there are no free and adequate vehicles of your company here, checking for others..." << std::endl;
-
-					NO_PREF:
 					PQclear(res);
+					NO_PREF:
 					outBuf.str(std::string());
 
 					outBuf << "SELECT *"
@@ -1291,7 +1382,7 @@ public:
 				}
 				else if (selected_menu_opt == 4)
 				{
-					setState(DBcontext::MAIN_MENU);
+					setState(DBcontext::ROUTE_CHECKER);
 				}
 				else if (selected_menu_opt == 5)
 				{
