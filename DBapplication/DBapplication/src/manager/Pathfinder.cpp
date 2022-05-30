@@ -146,16 +146,20 @@ void Pathfinder::pathfind(int64_t from_code, int64_t to_code, int64_t client, sh
 				if (dest.vehicle != paths::CAR) {
 					mul = 10.0;
 				}
+				break;
 			case 2: // Discourage planes
 				if (dest.vehicle == paths::PLANE) {
 					mul = 100.0;
 				}
+				break;
 			case 3: // Discourage ships
 				if (dest.vehicle == paths::SHIP) {
 					mul = 100.0;
 				}
+				break;
 			case 4: // Less costly
 				mul = 1.0 + dest.fee * 100.0;
+				break;
 			default:
 				break;
 			}

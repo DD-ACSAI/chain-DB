@@ -606,7 +606,7 @@ public:
 			}
 
 			std::cout << "\n Pathing...\n" << std::endl;
-			pather.pathfind(_strtoi64(coi_one.c_str(), nullptr, 10), _strtoi64(coi_two.c_str(), nullptr, 10), _strtoi64(code.c_str(), nullptr, 10), actual_selection);
+			pather.pathfind(_strtoi64(coi_one.c_str(), nullptr, 10), _strtoi64(coi_two.c_str(), nullptr, 10), _strtoi64(code.c_str(), nullptr, 10), (short) actual_selection);
 			
 			auto c = parseKey(_getch());
 
@@ -663,7 +663,7 @@ public:
 				size_t nRows = PQntuples(res);
 
 				for (size_t route_i = 0; route_i < nRows; route_i++) {
-					route_codes.insert(_strtoi64(PQgetvalue(res, route_i, 0), nullptr, 10));
+					route_codes.insert(_strtoi64(PQgetvalue(res, (int) route_i, 0), nullptr, 10));
 				}
 
 				std::cout << "\n Here are your routes " << std::endl;
@@ -746,8 +746,11 @@ public:
 			std::system("CLS");
 			printUtil.printHeader();
 
-			std::cout << "Hello, insert the code of your company in order to see your Centers of Interest." << std::endl;
+			std::cout << " Hello, insert the code of your company in order to see your Centers of Interest: ";
 			std::cin >> comp_code;
+
+			std::system("CLS");
+			printUtil.printHeader();
 
 			if (comp_code == "exit") break;
 
@@ -775,19 +778,19 @@ public:
 
 			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
 			{
-				std::cout << "Alas, your company has no Centers of Interest in our system" << std::endl;
+				std::cout << "\n Alas, your company has no Centers of Interest in our system" << std::endl;
 				_getch();
 				outBuf.str(std::string());
 				continue;
 			}
 
-			std::cout << "The Centers of Interest from where you operate are: " << std::endl;
+			std::cout << "\n The Centers of Interest from where you operate are: ";
 			printUtil.printTable(res);
 			PQclear(res);
 			outBuf.str(std::string());
 
 
-			std::cout << "Select one of your Centers of Interest from which to start your shipment: " << std::endl;
+			std::cout << "\n Select one of your Centers of Interest from which to start your shipment: ";
 
 			std::cin >> coi;
 
@@ -795,7 +798,7 @@ public:
 
 			if (!(query::atomicQuery(outBuf.str().c_str(), res, conn) && PQntuples(res) > 0))
 			{
-				std::cout << "We're sorry, that Center of Interest has no routes originating from it" << std::endl;
+				std::cout << "\n We're sorry, that Center of Interest has no routes originating from it" << std::endl;
 				_getch();
 				outBuf.str(std::string());
 				continue;
@@ -805,11 +808,11 @@ public:
 			PQclear(res);
 			outBuf.str(std::string());
 
-			std::cout << "Select which routes your shipment should follow: " << std::endl;
+			std::cout << "\n Select which routes your shipment should follow: ";
 
 			std::cin >> route;
 
-			std::cout << "Your selected Center of Interest has this stock: " << std::endl;
+			std::cout << "\n Your selected Center of Interest has this stock: ";
 
 			outBuf << "SELECT \"Product\".\"Name\", \"Product\".\"ID\", \"Stock\".\"Qty\"" <<
 				" FROM \"Stock\" JOIN \"Product\" ON(\"Stock\".\"ProdCode\" = \"Product\".\"ID\")" <<
@@ -832,7 +835,7 @@ public:
 				PQclear(res);
 				outBuf.str(std::string());
 			} else {
-				std::cout << "We're sorry, that Center of Interest's stocks are empty" << std::endl;
+				std::cout << "\n We're sorry, that Center of Interest's stocks are empty" << std::endl;
 				_getch();
 				outBuf.str(std::string());
 				continue;
@@ -843,11 +846,11 @@ public:
 				std::string itemcode;
 				std::string quantity;
 				std::unordered_set<int64_t> already_selected;
-				std::cout << "Insert the items that you want to ship (code, quantity), type \'stop\' or nothing to stop" << std::endl;
+				std::cout << "\n Insert the items that you want to ship (code, quantity), type \'stop\' or nothing to stop";
 				for (;;)
 				{
 
-					std::cout << "Insert Item Code: ";
+					std::cout << "\n Insert Item Code: ";
 					std::cin >> itemcode;
 
 					if (itemcode.empty() || itemcode == "stop") break;
@@ -856,14 +859,14 @@ public:
 					tup.first = _strtoi64(itemcode.c_str(), nullptr, 10);
 
 					while (productQuantities.find(tup.first) == productQuantities.end() || already_selected.find(tup.first) != already_selected.end()) {
-						std::cout << "Item code must be present or non-already selected, Insert Item Code: ";
+						std::cout << "\n Item code must be present or non-already selected, Insert Item Code: ";
 						std::cin >> itemcode;
 
 						if (itemcode.empty() || itemcode == "stop") goto STOP_FOR;
 						tup.first = _strtoi64(itemcode.c_str(), nullptr, 10);
 					}
 
-					std::cout << "Insert Quantity (<=" << productQuantities[tup.first] << "): ";
+					std::cout << "\n Insert Quantity (<=" << productQuantities[tup.first] << "): ";
 					std::cin >> quantity;
 
 					if (quantity.empty() || quantity == "stop") break;
@@ -871,7 +874,7 @@ public:
 
 					while (tup.second <= 0 || tup.second > productQuantities[tup.first])
 					{
-						std::cout << "Quantity can't be negative or greater than present, Insert Quantity (<=" << productQuantities[tup.first] << "): ";
+						std::cout << "\n Quantity can't be negative or greater than present, Insert Quantity (<=" << productQuantities[tup.first] << "): ";
 						std::cin >> quantity;
 
 						if (quantity.empty() || quantity == "stop") goto STOP_FOR;
@@ -887,7 +890,7 @@ public:
 				
 				outBuf.str(std::string());
 
-				outBuf << "Final selection for cargo: ";
+				outBuf << "\n Final selection for cargo: ";
 
 				for (auto const& [icode, qty] : elem_list)
 				{
@@ -899,7 +902,7 @@ public:
 				
 				std::string input_res;
 				std::cout << out_string << std::endl;
-				std::cout << "Type (y)es if you want to continue, write else otherwise: ";
+				std::cout << "\n Type (y)es if you want to continue, write else otherwise: ";
 				std::cin >> input_res;
 				
 				if (input_res != "y") continue;
@@ -910,11 +913,10 @@ public:
 			outBuf.str(std::string());
 
 			std::string input_res;
-			std::cout << "Great! Then we shall follow with selecting the vehicles, do you wish to visualize only those of your company? Type (y)es if so: ";
+			std::cout << "\n Great! Then we shall follow with selecting the vehicles, do you wish to visualize only those of your company? Type (y)es if so: ";
 			std::cin >> input_res;
 
 			bool priority_comp = (input_res == "y");
-
 
 			outBuf << "SELECT ct.\"PlaceACode\" as \"Place A\", ct.\"PlaceBCode\" as \"Place B\", ct.\"AllowedVehicle\"" <<
 				" FROM \"Contains\" as ct" <<
@@ -938,12 +940,14 @@ public:
 					contain.emplace_back(_strtoi64(PQgetvalue(res, i, 0), nullptr, 10), _strtoi64(PQgetvalue(res, i, 1), nullptr, 10), vType);
 				}
 
+				std::cout << "\n This is the route you have chosen: " << std::endl;
+
 				printUtil.printTable(res);
 				PQclear(res);
 				outBuf.str(std::string());
 			}
 			else {
-				std::cout << "Something went wrong, the route has no Contains associated..." << std::endl;
+				std::cout << "\n Something went wrong, the route has no Contains associated..." << std::endl;
 				_getch();
 				outBuf.str(std::string());
 				continue;
@@ -996,11 +1000,13 @@ public:
 						available_ids.insert(_strtoi64(PQgetvalue(res, i, 1), nullptr, 10));
 					}
 
+					std::cout << "\n These are the available vehicles from your company: " << std::endl;
+
 					printUtil.printTable(res);
 					PQclear(res);
 					outBuf.str(std::string());
 				} else {
-					std::cout << "Unfortunately there are no free and adequate vehicles of your company here, checking for others..." << std::endl;
+					std::cout << "\n Unfortunately there are no free and adequate vehicles of your company here, checking for others..." << std::endl;
 					PQclear(res);
 					NO_PREF:
 					outBuf.str(std::string());
@@ -1017,12 +1023,14 @@ public:
 							available_ids.insert(_strtoi64(PQgetvalue(res, i, 1), nullptr, 10));
 						}
 
+						std::cout << "\n These are the available vehicles: " << std::endl;
+
 						printUtil.printTable(res);
 						PQclear(res);
 						outBuf.str(std::string());
 					}
 					else {
-						std::cout << "Couldn't find any available vehicle at " << placeA << ", checking neighbors..." << std::endl;
+						std::cout << "\n Couldn't find any available vehicle at " << placeA << ", checking neighbors..." << std::endl;
 						PQclear(res);
 						outBuf.str(std::string());
 						outBuf << "SELECT nsd.*"
@@ -1037,14 +1045,16 @@ public:
 								available_ids.insert(_strtoi64(PQgetvalue(res, i, 1), nullptr, 10));
 							}
 
+							std::cout << "\n These are the available vehicles from your adjacent neighbours: " << std::endl;
+
 							printUtil.printTable(res);
 							PQclear(res);
 							outBuf.str(std::string());
 						}
 						else {
-							std::cout << "Couldn't even find at neighbors, this is really unlucky..." << std::endl;
+							std::cout << "\n Couldn't even find at neighbors, this is really unlucky..." << std::endl;
 							if (prev_id != -1 && prev_type == vType) {
-								std::cout << "We can continue with the current vehicle though, type (y) to do that (or face failure)";
+								std::cout << "\n We can continue with the current vehicle though, type (y) to do that (or face failure)";
 								std::string choice;
 								std::cin >> choice;
 
@@ -1061,7 +1071,7 @@ public:
 				}
 
 				if (prev_id != -1 && prev_type == vType) {
-					std::cout << "Alas you can continue with the current vehicle (type (c) to do so) or choose a listed vehicle: ";
+					std::cout << "\n Alas you can continue with the current vehicle (type (c) to do so) or choose a listed vehicle: ";
 					std::string choice;
 					std::cin >> choice;
 
@@ -1071,8 +1081,7 @@ public:
 					}
 
 					while (!use_current && available_ids.find(vehicle_val) == available_ids.end()) {
-						std::cout << "You can EITHER continue with the current vehicle (type (c) to do so) or choose a LISTED vehicle: ";
-						std::string choice;
+						std::cout << "\n You can EITHER continue with the current vehicle (type (c) to do so) or choose a LISTED vehicle: ";
 						std::cin >> choice;
 
 						use_current = choice == "c";
@@ -1082,15 +1091,14 @@ public:
 					}
 				}
 				else {
-					std::cout << "Choose a listed vehicle: ";
+					std::cout << "\n Choose a listed vehicle: ";
 					std::string choice;
 					std::cin >> choice;
 
 					vehicle_val = _strtoi64(choice.c_str(), nullptr, 10);
 
 					while (available_ids.find(vehicle_val) == available_ids.end()) {
-						std::cout << "Choose a LISTED vehicle: ";
-						std::string choice;
+						std::cout << "\n Choose a LISTED vehicle: ";
 						std::cin >> choice;
 
 						vehicle_val = _strtoi64(choice.c_str(), nullptr, 10);
@@ -1106,7 +1114,7 @@ public:
 			}
 
 			outBuf.str(std::string());
-			outBuf << "Final selection for shipment: ";
+			outBuf << "\n Final selection for shipment: ";
 
 			for (auto const& vehid : chosen_ids)
 			{
@@ -1116,12 +1124,14 @@ public:
 			std::string out_string = outBuf.str();
 			out_string.erase(out_string.size() - 2, 2);
 
-			input_res = "";
-			std::cout << out_string << std::endl;
-			std::cout << "Type (y)es if you want to continue, write else otherwise: ";
-			std::cin >> input_res;
+			input_res.erase();
 
-			if (input_res != "y") continue;
+			int final_in;
+			std::cout << out_string << std::endl;
+			std::cout << "\n Type (y)es if you want to continue, write else otherwise: ";
+			final_in = _getch();
+
+			if (final_in != 'y') continue;
 
 			//FINISH THE SHIPMENT
 			outBuf.str(std::string());
@@ -1161,7 +1171,18 @@ public:
 
 			outBuf << qtys_str << ", " << prod_str << ", " << comp_code << ", " << veh_str << ")";
 
-			query::atomicQuery(outBuf.str().c_str(), res, conn);
+			if (!query::atomicQuery(outBuf.str().c_str(), res, conn))
+			{
+				std::cerr << "There has been a problem in finalizing your shipment, check the stack strace for more detail. " << std::endl;
+				_getch();
+				continue;
+			}
+
+			std::system("CLS");
+			printUtil.printHeader();
+
+
+			std::cout << "\n\n Your shipment has been scheduled! " << std::endl;
 
 			_getch();
 			outBuf.str(std::string());
