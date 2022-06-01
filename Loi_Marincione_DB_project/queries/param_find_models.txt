@@ -1,0 +1,6 @@
+-- This is a parametrized query (one of those used inside the codebase)
+-- to use it as a normal query you must replace the '%' with a value!
+
+SELECT DISTINCT "Model".*
+FROM "Vehicle" JOIN "Model" ON("Vehicle"."ModelCode" = "Model"."ID" AND "Vehicle"."Type" = "Model"."Type")
+WHERE "Vehicle"."Owner" = %

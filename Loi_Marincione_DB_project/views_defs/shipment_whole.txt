@@ -1,0 +1,19 @@
+-- Oh my... why did pgadmin reformat this!?
+
+SELECT "Shipment"."ID" AS shipmentid,
+    "Shipment"."RequestDateTime" AS requestdate,
+    "Shipment"."EndDateTime" AS enddate,
+    "Shipment"."isHistorical" AS historical,
+    "Shipment"."ClientCode" AS client,
+    "Shipment"."RouteCode" AS route,
+    "Shipment"."FromCode" AS fromcode,
+    "Shipment"."ToCode" AS tocode,
+    array_agg("Crossing".* ORDER BY "Crossing"."Order") AS crossing_info,
+    cargos.cargo_info
+FROM "Shipment", "Crossing", (
+	SELECT "Shipment_1"."ID", array_agg("Cargo".*) AS cargo_info
+        FROM "Shipment" "Shipment_1", "Cargo"
+        WHERE "Cargo"."ShipmentCode" = "Shipment_1"."ID"
+        GROUP BY "Shipment_1"."ID") cargos
+WHERE "Shipment"."ID" = "Crossing"."ShipmentCode" AND cargos."ID" = "Shipment"."ID"
+GROUP BY "Shipment"."ID", cargos.cargo_info;

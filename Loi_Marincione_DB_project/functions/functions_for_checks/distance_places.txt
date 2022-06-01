@@ -1,0 +1,1 @@
+RETURN distance_points(("placeA")."Position", ("placeB")."Position");

@@ -1,0 +1,57 @@
+-- This is functionally equivalent to the Inject route procedure
+-- we added it to get back the id of the created route!
+
+DECLARE
+    prev_pos INTEGER;
+    curr_pos INTEGER;
+    route_id INTEGER;
+    ind INTEGER;
+BEGIN
+
+    -- Check if at least one owner will see this route
+    IF NOT EXISTS (
+        SELECT coi."ID"
+        FROM "CenterOfInterest" as coi
+        WHERE (coi."ID" = "coi_from" OR coi."ID" = "coi_to") AND coi."CompanyCode" = "client_req"
+    ) THEN
+        RAISE EXCEPTION 'No owner will see this route';
+        RETURN NONE;
+    END IF;
+       
+    -- Check if all connections make sense
+    prev_pos := (SELECT coi."PlaceCode" FROM "CenterOfInterest" as coi WHERE coi."ID" = "coi_from");
+    FOR ind IN 1..(array_length("places_a", 1))
+    LOOP 
+        IF "places_a"[ind] != prev_pos THEN
+        RAISE EXCEPTION 'The connections do not make sense';
+        RETURN NONE;
+        END IF;
+        
+        prev_pos := "places_b"[ind];
+        
+        IF NOT EXISTS (SELECT "Connection"."PlaceA"
+                       FROM "Connection"
+                       WHERE "Connection"."PlaceA" = "places_a"[ind] AND
+                       "Connection"."PlaceB" = "places_b"[ind] AND
+                       "Connection"."AllowedVehicles" = "types"[ind]) THEN
+        RAISE EXCEPTION 'Error at: (%, %)', ind, prev_pos;
+        RETURN NONE;
+        END IF;
+    END LOOP;
+    
+    -- Check if the last position is the one of the coi_to
+    IF prev_pos != (SELECT coi."PlaceCode" FROM "CenterOfInterest" as coi WHERE coi."ID" = "coi_to") THEN
+        RAISE EXCEPTION 'we do not reach our destination!';
+        RETURN NONE;
+    END IF;
+    
+    
+    -- All should be fine from here
+    INSERT INTO "Route"("FromCode","ToCode") VALUES ("coi_from", "coi_to") RETURNING "ID" INTO route_id;
+    INSERT INTO "ViewPrivilege"("CompCode", "RouteCode") VALUES ("client_req",route_id);
+    FOR ind IN 1..(array_length("places_a", 1))
+    LOOP
+        INSERT INTO "Contains"("RouteCode","AllowedVehicle","PlaceACode", "PlaceBCode", "Order") VALUES (route_id, "types"[ind], "places_a"[ind], "places_b"[ind], ind);
+    END LOOP;
+    RETURN route_id;
+END;

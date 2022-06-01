@@ -1,0 +1,3 @@
+-- An elementary euclidean distance
+
+RETURN sqrt((power(((a)[0] - (b)[0]), (2)::double precision) + power(((a)[1] - (b)[1]), (2)::double precision)));

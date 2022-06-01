@@ -1,0 +1,25 @@
+-- This is a parametrized query (one of those used inside the codebase)
+-- to use it as a normal query you must replace the '%' with a value!
+
+-- Oh well, now that I've unraveled this, it is longer than I thought...
+
+SELECT *
+FROM "Model" as md
+WHERE md."Type" = % AND EXISTS (
+	SELECT *
+	FROM "Vehicle"
+	WHERE "Vehicle"."ModelCode" = md."ID" AND "Vehicle"."Type" = md."Type"
+	AND "Vehicle"."ID" IN (
+		SELECT "Crossing"."VehicleCode"
+		FROM "Crossing"
+		WHERE "Crossing"."ShipmentCode" IN (
+			SELECT "Shipment"."ID"
+			FROM "Shipment" JOIN "Cargo" ON ("Shipment"."ID" = "Cargo"."ShipmentCode")
+			WHERE "Cargo"."ProdCode" IN (
+				SELECT "Product"."ID"
+				FROM "Product"
+				WHERE "Product"."Name" = %
+			)
+		)
+	)
+)

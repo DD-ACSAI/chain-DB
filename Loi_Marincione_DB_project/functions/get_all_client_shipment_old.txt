@@ -1,0 +1,7 @@
+-- redefined as parameterized query!
+
+BEGIN
+    RETURN (SELECT *
+            FROM "ShipmentWhole"
+            WHERE "ShipmentWhole"."client" = "client_code");
+END;

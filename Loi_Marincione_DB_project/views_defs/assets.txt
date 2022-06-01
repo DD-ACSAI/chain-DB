@@ -1,0 +1,33 @@
+-- This is functionally equivalent to count_assets_old.txt
+-- (To stress it, this isn't actually used, triggers are implemented!)
+
+-- Don't know why but pgAdmin reformats this stuff all the time,
+-- 	will try my best to make it readable!
+
+SELECT ret1."ID" AS company_id,
+    ret1.ndep,
+    ret2.nfact,
+    ret2.nware,
+    ret2.nstore,
+    ret3.ncars,
+    ret3.nplanes,
+    ret3.nships
+FROM (
+	SELECT "Company"."ID", count("Depot".*) AS ndep
+        FROM "Company" JOIN "Depot" ON "Company"."ID" = "Depot"."CompanyCode"
+        GROUP BY "Company"."ID") ret1,
+     (
+	SELECT "Company"."ID",
+            count("CenterOfInterest"."Type" = 'Factory'::"CoIType") AS nfact,
+            count("CenterOfInterest"."Type" = 'Warehouse'::"CoIType") AS nware,
+            count("CenterOfInterest"."Type" = 'Store'::"CoIType") AS nstore
+        FROM "Company" JOIN "CenterOfInterest" ON "Company"."ID" = "CenterOfInterest"."CompanyCode"
+        GROUP BY "Company"."ID") ret2,
+     (
+	SELECT "Company"."ID",
+            count("Vehicle"."Type" = 'Car'::"VehicleType") AS ncars,
+            count("Vehicle"."Type" = 'Plane'::"VehicleType") AS nplanes,
+            count("Vehicle"."Type" = 'Ship'::"VehicleType") AS nships
+        FROM "Company" JOIN "Vehicle" ON "Vehicle"."Owner" = "Company"."ID"
+        GROUP BY "Company"."ID") ret3
+WHERE ret1."ID" = ret2."ID" AND ret2."ID" = ret3."ID";

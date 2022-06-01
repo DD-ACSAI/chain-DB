@@ -1,4 +1,8 @@
 -- Count assets
+-- As said in the document, this query isn't needed anymore since
+--  it is now implemented with multiple triggers!
+--  Anyway it is also the query run to produce the Asset view (which
+--  is also left as an example, not really used)
 
 SELECT ret1."ID", ret1.NDep, ret2.NFact, ret2.NWare, ret2.NStore, ret3.NCars, ret3.NPlanes, ret3.NShips
 FROM (

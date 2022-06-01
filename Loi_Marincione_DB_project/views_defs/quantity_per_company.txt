@@ -1,0 +1,3 @@
+SELECT coi."CompanyCode" AS company, st."ProdCode" AS product, sum(st."Qty") AS quantity
+FROM "CenterOfInterest" coi JOIN "Stock" st ON coi."ID" = st."CoICode"
+GROUP BY st."ProdCode", coi."CompanyCode";

@@ -1,0 +1,6 @@
+-- Quality of life improvement!
+
+BEGIN
+    CALL "Add connection"("placeA", "placeB", "allowed_type");
+    CALL "Add connection"("placeB", "placeA", "allowed_type");
+END;

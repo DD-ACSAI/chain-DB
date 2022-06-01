@@ -1,0 +1,15 @@
+BEGIN
+    IF NOT EXISTS (
+      SELECT *
+      FROM "Ticket"
+      WHERE NOT "Ticket"."isExpired" AND "Ticket"."VehicleCode" = "my_vehicle_code"
+      ) AND EXISTS (
+        SELECT *
+        FROM "Depot"
+        WHERE "Depot"."PlaceCode" = "my_depot_code" AND "Depot"."OccupiedPlaces" < "Depot"."MaxPlaces" - 1
+      )THEN
+        INSERT INTO "Ticket"("PlaceCode", "VehicleCode", "TimeIn") VALUES ("my_depot_code", "my_vehicle_code", CURRENT_TIMESTAMP);
+    ELSE
+        RAISE;
+    END IF;
+END

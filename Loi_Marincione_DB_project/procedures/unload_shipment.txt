@@ -1,0 +1,37 @@
+DECLARE
+    to_coi INTEGER;
+    cargos "Cargo"[];
+    curr_cargo "Cargo";
+    i   INTEGER;
+BEGIN
+    IF EXISTS (
+      SELECT *
+      FROM "Shipment"
+      WHERE "Shipment"."isHistorical" AND "Shipment"."ID" = "shipment_code")
+      THEN
+      RETURN;
+    END IF;
+
+    cargos := (SELECT "ShipmentWhole"."cargo_info"
+               FROM "ShipmentWhole"
+               WHERE "ShipmentWhole"."shipmentid" = "shipment_code");
+    to_coi := (SELECT "Shipment"."ToCode"
+                FROM "Shipment"
+                WHERE "Shipment"."ID" = "shipment_code");
+    
+    FOR i in 1..array_length(cargos,1) LOOP
+        curr_cargo := cargos[i];
+        IF EXISTS ( SELECT * FROM "Stock" WHERE "Stock"."CoICode" = "to_coi" AND "Stock"."ProdCode" = curr_cargo."ProdCode" )
+        THEN
+          UPDATE "Stock"
+          SET "Qty" = "Qty" + curr_cargo."Qty"
+          WHERE "Stock"."CoICode" = "to_coi" AND "Stock"."ProdCode" = curr_cargo."ProdCode";
+        ELSE
+           INSERT INTO "Stock"("CoICode", "ProdCode", "Qty") VALUES ("to_coi", curr_cargo."ProdCode", curr_cargo."Qty");
+       END IF;
+    END LOOP;
+    
+    UPDATE "Shipment"
+    SET "isHistorical" = true, "EndDateTime" = CURRENT_TIMESTAMP 
+    WHERE "Shipment"."ID" = "shipment_code";
+END;

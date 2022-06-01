@@ -184,6 +184,10 @@ public:
 				" FROM \"Stock\" JOIN \"Product\" ON(\"Stock\".\"ProdCode\" = \"Product\".\"ID\")"
 				" WHERE \"Stock\".\"CoICode\" = %"));
 
+			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Overall Stocks", "SELECT *"
+				" FROM \"Quantity_per_company\" as cpy"
+				" WHERE cpy.\"company\" = %"));
+
 			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Client Shipments", "SELECT *"
 				" FROM \"ShipmentWhole\""
 				" WHERE \"ShipmentWhole\".\"client\" = %"));
@@ -231,8 +235,7 @@ public:
 				));
 
 			//QUERIES
-
-
+			// Nope.
 		}
 		
 		well_knowns.shrink_to_fit();

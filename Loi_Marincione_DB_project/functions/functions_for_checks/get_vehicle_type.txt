@@ -1,0 +1,7 @@
+BEGIN
+  RETURN (
+    SELECT "Vehicle"."Type"
+    FROM "Vehicle"
+    WHERE "Vehicle"."ID" = "vehicle_code"
+  );
+END;

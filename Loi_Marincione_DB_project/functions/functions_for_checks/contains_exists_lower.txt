@@ -1,0 +1,9 @@
+BEGIN
+    IF "cont"."Order" <= 1 THEN
+        RETURN True;
+    END IF;
+    
+    RETURN EXISTS (
+      SELECT * FROM "Contains" as ct
+      WHERE ct."RouteCode" = "cont"."RouteCode" AND ct."Order" = ("cont"."Order" - 1));
+END;

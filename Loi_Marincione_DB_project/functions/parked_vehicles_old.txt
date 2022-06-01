@@ -1,0 +1,12 @@
+-- again, parameterized query!
+
+BEGIN
+RETURN (
+  SELECT "Vehicle"
+  FROM "Ticket" JOIN "Vehicle" ON ("Vehicle"."ID" = "Ticket"."VehicleCode")
+  WHERE "Ticket"."PlaceCode" = "depot" AND
+        "Ticket"."TimeIn" >= "time_start" AND (
+        "Ticket"."TimeOut" < "time_end" OR NOT "Ticket"."isExpired" AND
+        CURRENT_TIMESTAMP < "time_end")
+);
+END;

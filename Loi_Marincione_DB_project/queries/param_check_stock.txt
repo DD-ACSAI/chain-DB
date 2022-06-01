@@ -1,0 +1,6 @@
+-- This is a parametrized query (one of those used inside the codebase)
+-- to use it as a normal query you must replace the '%' with a value!
+
+SELECT *
+FROM "Stock" JOIN "Product" ON("Stock"."ProdCode" = "Product"."ID")
+WHERE "Stock"."CoICode" = %

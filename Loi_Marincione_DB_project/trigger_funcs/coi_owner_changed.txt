@@ -1,0 +1,23 @@
+-- Disclaimer, the actual "CREATE TRIGGER"
+--  sits inside the DB and is handled by pgadmin
+--  because one thing is a trigger function and another
+--  is a trigger. (Dunno why they made this
+--  system so contorted...)
+
+BEGIN
+    IF EXISTS (SELECT * FROM "Company" WHERE "Company"."ID" = new."CompanyCode")
+      THEN
+      UPDATE "Company"
+      SET "CoIsNum" = "CoIsNum" + 1
+      WHERE "ID" = new."CompanyCode";
+    END IF;
+    
+    IF EXISTS (SELECT * FROM "Company" WHERE "Company"."ID" = old."CompanyCode")
+    THEN
+      UPDATE "Company"
+      SET "CoIsNum" = "CoIsNum" - 1
+      WHERE "ID" = old."CompanyCode";
+    END IF;
+    
+    RETURN NULL;
+END

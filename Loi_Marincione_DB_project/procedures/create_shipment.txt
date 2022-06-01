@@ -1,0 +1,83 @@
+DECLARE
+    curr_qty INTEGER;
+    curr_prod INTEGER;
+    from_coi INTEGER;
+    to_coi INTEGER;
+    i   INTEGER;
+    shipment_id INTEGER;
+    veh_code INTEGER;
+    all_types "VehicleType"[];
+    placesA INTEGER[];
+    placesB INTEGER[];
+    curr_type "VehicleType";
+    curr_ap integer;
+    curr_bp integer;
+    curr_time TIMESTAMP;
+BEGIN
+    from_coi := (SELECT "Route"."FromCode"
+                 FROM "Route"
+                 WHERE "Route"."ID" = "route_code");
+    to_coi := (SELECT "Route"."ToCode"
+               FROM "Route"
+               WHERE "Route"."ID" = "route_code");
+    -- Create shipment
+    curr_time := CURRENT_TIMESTAMP;
+    INSERT INTO "Shipment"("RequestDateTime", "ClientCode", "RouteCode", "FromCode", "ToCode")
+        VALUES (curr_time, "client_code", "route_code", from_coi, to_coi) RETURNING "Shipment"."ID" into shipment_id;
+
+    -- Fill shipment
+    FOR i in 1..ARRAY_LENGTH(qtys,1) LOOP
+        curr_qty := "qtys"[i];
+        curr_prod := "prod_codes"[i];
+        IF NOT EXISTS (
+            SELECT *
+            FROM "Stock"
+            WHERE "Stock"."ProdCode" = curr_prod AND
+                  "Stock"."CoICode" = from_coi AND
+                  "Stock"."Qty" >= curr_qty
+        ) THEN
+            ROLLBACK;
+            RETURN;
+        END IF;
+        
+        UPDATE "Stock"
+        SET "Qty" = "Qty" - curr_qty
+        WHERE "Stock"."CoICode" = from_coi AND "Stock"."ProdCode" = curr_prod;
+        
+        INSERT INTO "Cargo"("ProdCode","ShipmentCode","Qty") VALUES (curr_prod, shipment_id, curr_qty);
+    END LOOP;
+    
+    -- I HATE THIS.
+    all_types := (SELECT ARRAY_AGG("Contains"."AllowedVehicle" ORDER BY "Contains"."Order" ASC)
+                    FROM "Contains"
+                    WHERE "Contains"."RouteCode" = "route_code");
+    placesA := (SELECT ARRAY_AGG("Contains"."PlaceACode" ORDER BY "Contains"."Order" ASC)
+                    FROM "Contains"
+                    WHERE "Contains"."RouteCode" = "route_code");
+    placesB := (SELECT ARRAY_AGG("Contains"."PlaceBCode" ORDER BY "Contains"."Order" ASC)
+                    FROM "Contains"
+                    WHERE "Contains"."RouteCode" = "route_code");             
+    
+    -- Create Crossings
+    FOR i in 1..ARRAY_LENGTH(vehicle_codes,1) LOOP
+        veh_code := "vehicle_codes"[i];
+        curr_type := all_types[i];
+        curr_ap := placesA[i];
+        curr_bp := placesB[i];
+        /*
+        IF EXISTS (
+          SELECT * -- CHECKING IF ...
+          FROM "Crossing" JOIN "Shipment" ON ("Crossing"."ShipmentCode" = "Shipment"."ID")
+          WHERE NOT "Shipment"."isHistorical" AND NOT "Shipment"."ID" = shipment_id
+          ) THEN
+          ROLLBACK;
+          RETURN;
+        END IF;
+        */
+        UPDATE "Ticket"
+        SET "isExpired" = True, "TimeOut" = CURRENT_TIMESTAMP
+        WHERE NOT "Ticket"."isExpired" AND "Ticket"."VehicleCode" = veh_code; 
+        INSERT INTO "Crossing"("VehicleCode", "AllowedVehicle", "PlaceA", "PlaceB", "ShipmentCode", "Order")
+            VALUES (veh_code, curr_type, curr_ap, curr_bp, shipment_id, i);
+    END LOOP;
+END;

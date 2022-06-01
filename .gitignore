@@ -358,3 +358,5 @@ MigrationBackup/
 *.pdf
 
 db_data/
+
+*.mp4

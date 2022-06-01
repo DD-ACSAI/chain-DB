@@ -1,0 +1,13 @@
+BEGIN
+  RETURN (0 = (
+    SELECT count(*) AS count
+    FROM "Ticket"
+    WHERE (
+	("Ticket"."ID" != (is_legal_ticket.my_ticket)."ID") AND
+	("Ticket"."PlaceCode" != (is_legal_ticket.my_ticket)."PlaceCode") AND
+	(NOT (("Ticket"."isExpired" OR (is_legal_ticket.my_ticket)."isExpired") AND
+	(("Ticket"."TimeOut" < (is_legal_ticket.my_ticket)."TimeIn") OR
+	("Ticket"."TimeIn" > (is_legal_ticket.my_ticket)."TimeOut"))) AND
+	"Ticket"."VehicleCode" = "my_ticket"."VehicleCode")))
+);
+END;

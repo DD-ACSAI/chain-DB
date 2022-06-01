@@ -1,0 +1,25 @@
+DECLARE
+    from_coi INTEGER;
+    cargos "Cargo"[];
+    curr_cargo "Cargo";
+    i   INTEGER;
+BEGIN
+    cargos := (SELECT "ShipmentWhole"."cargo_info"
+               FROM "ShipmentWhole"
+               WHERE "ShipmentWhole"."shipmentid" = "shipment_code");
+    
+    from_coi := (SELECT "Shipment"."FromCode"
+            FROM "Shipment"
+            WHERE "Shipment"."ID" = "shipment_code");
+    
+    FOR i in 1..array_length(cargos,1) LOOP
+        curr_cargo := cargos[i];
+        UPDATE "Stock"
+        SET "Qty" = "Qty" + curr_cargo."Qty"
+        WHERE "Stock"."CoICode" = "from_coi" AND "Stock"."ProdCode" = curr_cargo."ProdCode";
+    END LOOP;
+    
+    DELETE FROM "Cargo" WHERE "Cargo"."ShipmentCode" = "shipment_code";
+    DELETE FROM "Crossing" WHERE "Crossing"."ShipmentCode" = "shipment_code";
+    DELETE FROM "Shipment" WHERE "Shipment"."ID" = "shipment_code";
+END;

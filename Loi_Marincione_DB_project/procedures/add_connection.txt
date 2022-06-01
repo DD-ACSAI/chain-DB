@@ -1,0 +1,9 @@
+BEGIN
+    IF "allowed_type" == 'Car' THEN
+        INSERT INTO "Connection"("PlaceA", "PlaceB", "AllowedVehicles", "distance") VALUES ("placeA", "placeB", "allowed_type", 1.3 * "distance_places_ints"("placeA", "placeB"));
+    ELSIF "allowed_type" == 'Plane' THEN
+        INSERT INTO "Connection"("PlaceA", "PlaceB", "AllowedVehicles", "distance") VALUES ("placeA", "placeB", "allowed_type", 1.1 * "distance_places_ints"("placeA", "placeB"));
+    ELSE -- Ship then
+        INSERT INTO "Connection"("PlaceA", "PlaceB", "AllowedVehicles", "distance") VALUES ("placeA", "placeB", "allowed_type", 1.2 * "distance_places_ints"("placeA", "placeB"));
+    END IF;
+END;
