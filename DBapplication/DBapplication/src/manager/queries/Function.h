@@ -1,6 +1,6 @@
 #pragma once
 #include "WKQuery.h"
-#include "..\..\defines\clicolors.h"
+#include "../../defines/clicolors.h"
 
 template <std::size_t S>
 class Function : public WKQuery
