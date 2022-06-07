@@ -1,0 +1,13 @@
+-- Essentially we wanted to deal with integers, 
+-- full records are badly managed with libpq!
+
+-- Also... pgadmin stop reformatting!
+
+RETURN distance_places(
+	( SELECT "Place".*::"Place" AS "Place"
+	  FROM "Place"
+	  WHERE ("Place"."ID" = distance_places_ints.code_a)),
+	( SELECT "Place".*::"Place" AS "Place"
+	  FROM "Place"
+	  WHERE ("Place"."ID" = distance_places_ints.code_b))
+);

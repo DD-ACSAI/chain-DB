@@ -1,0 +1,12 @@
+-- pgadmin's reformatting seems to happen only on those
+-- operations written as sql, while those written as plpgsql
+-- seem to remain unaffected...
+
+RETURN (0 <> (
+	SELECT count(*) AS count
+	FROM "Place"
+	WHERE (
+		("Place"."ID" <> (is_used_position.place)."ID") AND
+		((is_used_position.margin)::double precision > distance_places(is_used_position.place, "Place".*)))
+	)
+);

@@ -1,0 +1,5 @@
+RETURN (
+	SELECT "ViewPrivilege"."CompCode"
+	FROM "ViewPrivilege"
+	WHERE ("ViewPrivilege"."RouteCode" = route_viewers.route_code)
+);

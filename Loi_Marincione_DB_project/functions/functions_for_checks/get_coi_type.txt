@@ -1,0 +1,5 @@
+RETURN (
+	SELECT "CenterOfInterest"."Type"
+	FROM "CenterOfInterest"
+	WHERE ("CenterOfInterest"."ID" = get_coi_type.coi_id)
+);

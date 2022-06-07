@@ -1,0 +1,12 @@
+-- This view leverages Shipment's notHistoricals index!
+
+SELECT "Ticket"."PlaceCode" AS "Depot",
+    veh."ID",
+    veh."Owner",
+    veh."Type"
+FROM "Ticket" JOIN "Vehicle" veh ON veh."ID" = "Ticket"."VehicleCode"
+WHERE NOT "Ticket"."isExpired" AND NOT EXISTS (
+	SELECT cr."VehicleCode"
+        FROM "Crossing" cr JOIN "Shipment" ship ON ship."ID" = cr."ShipmentCode"
+        WHERE NOT ship."isHistorical" AND cr."VehicleCode" = veh."ID"
+);

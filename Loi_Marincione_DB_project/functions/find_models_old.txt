@@ -1,0 +1,8 @@
+-- Reimplemented as a parameterized query!
+
+BEGIN
+RETURN (
+  SELECT *
+  FROM "Vehicle" JOIN "Model" ON ("Vehicle"."ModelCode" = "Model"."ID" AND "Vehicle"."Type" = "Model"."Type")
+  WHERE "Vehicle"."Owner" = "find_models"."Company_code");
+END;

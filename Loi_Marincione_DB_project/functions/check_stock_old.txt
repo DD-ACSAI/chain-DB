@@ -1,0 +1,9 @@
+-- This function was parameterized!
+
+BEGIN
+RETURN (
+    SELECT "Product"
+    FROM "Stock" JOIN "Product" ON ("Stock"."ProdCode" = "Product"."ID")
+    WHERE "Stock"."CoICode" = "coi_code"
+);
+END;

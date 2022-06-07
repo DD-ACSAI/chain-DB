@@ -144,7 +144,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PROGRAMFILES)\PostgreSQL\14\include;$(PROGRAMFILES)\PostgreSQL\14\include\server</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PROGRAMFILES)\PostgreSQL\14\include;$(PROGRAMFILES)\PostgreSQL\14\include\server;D:\Programmi\PostgreSQL\include;D:\Programmi\PostgreSQL\include\server</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -160,7 +160,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(PROGRAMFILES)\PostgreSQL\14\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(PROGRAMFILES)\PostgreSQL\14\lib;%(AdditionalLibraryDirectories);D:\Programmi\PostgreSQL\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>libpq.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>

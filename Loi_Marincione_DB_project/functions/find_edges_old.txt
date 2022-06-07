@@ -1,0 +1,8 @@
+-- This is pretty much useless since functions cannot return tables
+-- indeed we reimplemented it inside the codebase.
+
+BEGIN
+RETURN (SELECT *
+        FROM "Connection"
+        WHERE "Connection"."PlaceA" = "place_code");
+END;

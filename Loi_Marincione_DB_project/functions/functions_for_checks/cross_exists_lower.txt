@@ -1,0 +1,9 @@
+BEGIN
+    IF "cross"."Order" <= 1 THEN
+        RETURN True;
+    END IF;
+    
+    RETURN EXISTS (
+      SELECT * FROM "Crossing" as cr
+      WHERE cr."ShipmentCode" = "cross"."ShipmentCode" AND cr."Order" = ("cross"."Order" - 1));
+END;

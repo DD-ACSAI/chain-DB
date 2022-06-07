@@ -1,0 +1,16 @@
+BEGIN
+    IF NOT EXISTS (
+      SELECT *
+      FROM "Shipment"
+      WHERE "Shipment"."RouteCode" = "route_code" AND NOT "Shipment"."isHistorical"
+      ) THEN
+      
+      DELETE FROM "Contains" WHERE "RouteCode" = "route_code";
+      UPDATE "Shipment"
+      SET "RouteCode" = NULL
+      WHERE "Shipment"."RouteCode" = "route_code";
+      DELETE FROM "ViewPrivilege" WHERE "RouteCode" = "route_code";
+      DELETE FROM "Route" WHERE "ID" = "route_code";
+    END IF;
+END;
+      

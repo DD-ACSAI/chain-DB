@@ -1,0 +1,16 @@
+-- This is a parametrized query (one of those used inside the codebase)
+-- to use it as a normal query you must replace the '%' with a value!
+
+-- Yes, this is to make sure the user doesn't have to imput
+-- the same parameters twice!
+WITH temp_vals (time_start, time_end, depot) as (
+	values (TIMESTAMP %, TIMESTAMP %, CAST(% AS integer))
+)
+
+
+SELECT "Vehicle".*
+FROM "Ticket" JOIN "Vehicle" ON ("Vehicle"."ID" = "Ticket"."VehicleCode"), temp_vals
+WHERE "Ticket"."PlaceCode" = temp_vals.depot AND
+      "Ticket"."TimeIn" >= temp_vals.time_start AND (
+      "Ticket"."TimeOut" < temp_vals.time_end OR NOT "Ticket"."isExpired" AND
+      CURRENT_TIMESTAMP < temp_vals.time_end);
