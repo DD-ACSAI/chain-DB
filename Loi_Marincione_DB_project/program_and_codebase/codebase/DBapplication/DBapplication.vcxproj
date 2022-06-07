@@ -162,6 +162,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(PROGRAMFILES)\PostgreSQL\14\lib;%(AdditionalLibraryDirectories);D:\Programmi\PostgreSQL\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>libpq.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <CustomBuildStep>
       <Command>

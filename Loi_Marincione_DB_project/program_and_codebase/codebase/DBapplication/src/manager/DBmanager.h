@@ -9,6 +9,7 @@
 #include <array>
 #include <utility>
 #include <unordered_set>
+#include <stack>
 #include "dbhierarchy/Dbnode.h"
 #include "../DButils/queries.h"
 #include "../DButils/CLprinter.h"
@@ -66,7 +67,7 @@ public:
 		well_knowns.reserve(32);
 
 
-		std::vector<std::string> schemas(12);
+		std::vector<std::string> schemas;
 
 		using string_tup = std::pair<std::string, std::string>;
 		{//Instantiating Well Knowns (Boilerplate warning!)
@@ -196,7 +197,7 @@ public:
 				"WITH temp_vals (time_start, time_end, depot) as ("
 				"values (TIMESTAMP %, TIMESTAMP %, CAST(% AS integer))"
 				")"
-				"SELECT \"Vehicle\".*"
+				" SELECT \"Vehicle\".*"
 				" FROM \"Ticket\" JOIN \"Vehicle\" ON (\"Vehicle\".\"ID\" = \"Ticket\".\"VehicleCode\"), temp_vals"
 				" WHERE \"Ticket\".\"PlaceCode\" = temp_vals.depot AND"
 				" \"Ticket\".\"TimeIn\" >= temp_vals.time_start AND ("
@@ -210,9 +211,9 @@ public:
 				" SELECT \"Shipment\".\"ClientCode\""
 				" FROM \"Shipment\" JOIN \"Crossing\" as cr ON (\"Shipment\".\"ID\" = cr.\"ShipmentCode\")"
 				" WHERE EXISTS ( SELECT *"
-				"FROM \"Place\""
-				"WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
-				"AND \"Place\".\"Name\" = %))"
+				" FROM \"Place\""
+				" WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
+				" AND \"Place\".\"Name\" = %))"
 				));
 
 			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Models Transporting Something",
@@ -222,16 +223,16 @@ public:
 				" SELECT *"
 				" FROM \"Vehicle\""
 				" WHERE \"Vehicle\".\"ModelCode\" = md.\"ID\" AND \"Vehicle\".\"Type\" = md.\"Type\""
-				"AND \"Vehicle\".\"ID\" IN ("
-				"SELECT \"Crossing\".\"VehicleCode\""
-				"FROM \"Crossing\""
-				"WHERE \"Crossing\".\"ShipmentCode\" IN ("
-				"SELECT \"Shipment\".\"ID\""
-				"FROM \"Shipment\" JOIN \"Cargo\" ON (\"Shipment\".\"ID\" = \"Cargo\".\"ShipmentCode\")"
-				"WHERE \"Cargo\".\"ProdCode\" IN ("
-				"SELECT \"Product\".\"ID\""
-				"FROM \"Product\""
-				"WHERE \"Product\".\"Name\" = %))))"
+				" AND \"Vehicle\".\"ID\" IN ("
+				" SELECT \"Crossing\".\"VehicleCode\""
+				" FROM \"Crossing\""
+				" WHERE \"Crossing\".\"ShipmentCode\" IN ("
+				" SELECT \"Shipment\".\"ID\""
+				" FROM \"Shipment\" JOIN \"Cargo\" ON (\"Shipment\".\"ID\" = \"Cargo\".\"ShipmentCode\")"
+				" WHERE \"Cargo\".\"ProdCode\" IN ("
+				" SELECT \"Product\".\"ID\""
+				" FROM \"Product\""
+				" WHERE \"Product\".\"Name\" = %))))"
 				));
 
 			//QUERIES
@@ -250,9 +251,17 @@ public:
 			std::cout << "listing schemas: " << "\n";
 			printUtil.printTable(res);
 #endif
+			std::unordered_set<std::string> privates = { "information_schema", "pg_catalog", "pg_toast" }; //aaaaaaaaa
+
 			for (lint i = 0; i < extract.rows; ++i)
 			{
-				auto name = PQgetvalue(res, i, 0);
+				auto name = AS_STR(PQgetvalue(res, i, 0));
+
+				if (privates.find(name) != privates.end())
+				{
+					name = AS_STR("        aaaaaaaaa") + name;
+				}
+
 				schemas.emplace_back(name);
 				root.addChildren(name);
 
@@ -260,32 +269,41 @@ public:
 				std::cout << schemas.at(i) << "\n";
 #endif
 			}
-		}
 
-		for (auto const& schema : schemas)
+			schemas.shrink_to_fit();
+		} 
+
+		auto x = "aaaaaaaaa";
+
+		// Second query scope
 		{
-			auto query = query::string_format<char const*>("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s';", schema.c_str());
-			query::atomicQuery(query.c_str(), res, connection);
-			query::queryRes extract(res);
+		std::unordered_set<std::string> privates = { "        aaaaaaaaainformation_schema", "        aaaaaaaaapg_catalog", "        aaaaaaaaapg_toast" };
 
-			for (lint i = 0; i < extract.rows; ++i)
+			for (auto const& schema : schemas)
 			{
-				auto tname = PQgetvalue(res, i, 0);
-				root[schema].addChildren(tname);
+				auto const& actualName = privates.find(schema) != privates.end() ? schema.substr(17) : schema;
+
+				auto query = query::string_format<char const*>("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s';", actualName.c_str());
+				query::atomicQuery(query.c_str(), res, connection);
+				query::queryRes extract(res);
+
+				for (lint i = 0; i < extract.rows; ++i)
+				{
+					auto tname = PQgetvalue(res, i, 0);
+					root[schema].addChildren(tname);
+				}
+
+
+	#ifdef _DEBUG
+				std::cout << "listing tables for schema " << actualName << ": " << "\n";
+				printUtil.printTable(res);
+	#endif	
 			}
-
-
-#ifdef _DEBUG
-			std::cout << "listing tables for schema " << schema << ": " << "\n";
-			printUtil.printTable(res);
-#endif	
 		}
-
 		
 		setHide(false);
 		refreshScreen();
 		CLprinter::setPos(0, 0);
-
 
 	}
 
@@ -310,8 +328,10 @@ public:
 		{
 			printUtil.updateHeader("Table View");
 			CLprinter::showCursor(false);
-			currTab.tabSchema = root[std::get<1>(selected_dir)].getName();
-			currTab.tabName = root[currTab.tabSchema][std::get<2>(selected_dir)].getName();
+
+			auto const& schemaNode = root[std::get<1>(selected_dir)];
+			currTab.tabSchema = schemaNode.getQueryName();
+			currTab.tabName = root[schemaNode.getName()][std::get<2>(selected_dir)].getName();
 
 			query::atomicQuery(std::string("SELECT COUNT(*) FROM \"" + currTab.tabSchema + "\".\"" + currTab.tabName + "\"").c_str(), res, conn);
 			query::queryRes extract(res);
@@ -362,7 +382,7 @@ public:
 	{
 
 		isHidingPrivate = state;
-		bounds.first = 3 * state;
+		bounds.first = state ? 3i64 : 0i64;
 		bounds.second = root.getChildren().size() - 1;
 		std::get<1>(selected_dir) = bounds.first;
 		std::get<2>(selected_dir) = 0;
@@ -394,7 +414,8 @@ public:
 	void printTableView() const
 	{
 
-		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
+		std::array<std::string, 1> phrases = { "Print Contents"};
+		
 
 		std::cout << "\n" << " ";
 
@@ -1442,7 +1463,7 @@ private:
 		int recordSize;
 		long long int recordBytes;
 
-		tabViewAttr() : tabName("NULL"), tabSchema("NULL"), selected_opt(0), rowCount(0), recordSize(0), recordBytes(0) {}
+		tabViewAttr() : selected_opt(0), tabName("NULL"), tabSchema("NULL"), rowCount(0), recordSize(0), recordBytes(0) {}
 	};
 
 	Dbnode<NODE::ROOT> root;
