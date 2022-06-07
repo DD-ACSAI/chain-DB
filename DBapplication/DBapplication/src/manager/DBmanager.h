@@ -192,7 +192,7 @@ public:
 				"WITH temp_vals (time_start, time_end, depot) as ("
 				"values (TIMESTAMP %, TIMESTAMP %, CAST(% AS integer))"
 				")"
-				"SELECT \"Vehicle\".*"
+				" SELECT \"Vehicle\".*"
 				" FROM \"Ticket\" JOIN \"Vehicle\" ON (\"Vehicle\".\"ID\" = \"Ticket\".\"VehicleCode\"), temp_vals"
 				" WHERE \"Ticket\".\"PlaceCode\" = temp_vals.depot AND"
 				" \"Ticket\".\"TimeIn\" >= temp_vals.time_start AND ("
@@ -206,9 +206,9 @@ public:
 				" SELECT \"Shipment\".\"ClientCode\""
 				" FROM \"Shipment\" JOIN \"Crossing\" as cr ON (\"Shipment\".\"ID\" = cr.\"ShipmentCode\")"
 				" WHERE EXISTS ( SELECT *"
-				"FROM \"Place\""
-				"WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
-				"AND \"Place\".\"Name\" = %))"
+				" FROM \"Place\""
+				" WHERE (\"Place\".\"ID\" = cr.\"PlaceA\" OR \"Place\".\"ID\" = cr.\"PlaceB\")"
+				" AND \"Place\".\"Name\" = %))"
 				));
 
 			well_knowns.emplace_back(std::make_unique<ParametrizedQuery>("Get Models Transporting Something",
@@ -218,16 +218,16 @@ public:
 				" SELECT *"
 				" FROM \"Vehicle\""
 				" WHERE \"Vehicle\".\"ModelCode\" = md.\"ID\" AND \"Vehicle\".\"Type\" = md.\"Type\""
-				"AND \"Vehicle\".\"ID\" IN ("
-				"SELECT \"Crossing\".\"VehicleCode\""
-				"FROM \"Crossing\""
-				"WHERE \"Crossing\".\"ShipmentCode\" IN ("
-				"SELECT \"Shipment\".\"ID\""
-				"FROM \"Shipment\" JOIN \"Cargo\" ON (\"Shipment\".\"ID\" = \"Cargo\".\"ShipmentCode\")"
-				"WHERE \"Cargo\".\"ProdCode\" IN ("
-				"SELECT \"Product\".\"ID\""
-				"FROM \"Product\""
-				"WHERE \"Product\".\"Name\" = %))))"
+				" AND \"Vehicle\".\"ID\" IN ("
+				" SELECT \"Crossing\".\"VehicleCode\""
+				" FROM \"Crossing\""
+				" WHERE \"Crossing\".\"ShipmentCode\" IN ("
+				" SELECT \"Shipment\".\"ID\""
+				" FROM \"Shipment\" JOIN \"Cargo\" ON (\"Shipment\".\"ID\" = \"Cargo\".\"ShipmentCode\")"
+				" WHERE \"Cargo\".\"ProdCode\" IN ("
+				" SELECT \"Product\".\"ID\""
+				" FROM \"Product\""
+				" WHERE \"Product\".\"Name\" = %))))"
 				));
 
 			//QUERIES
@@ -391,7 +391,8 @@ public:
 	void printTableView() const
 	{
 
-		std::array<std::string, 2> phrases = { "Print Contents", "Show Statistics" };
+		std::array<std::string, 1> phrases = { "Print Contents"};
+		
 
 		std::cout << "\n" << " ";
 
