@@ -91,6 +91,9 @@ public:
 		static_assert(std::is_same_v<S, std::string&> || std::is_same_v<S, const char*>
 			|| std::is_same_v<S, std::string> || std::is_same_v<S, char*>, "Must use a string/string literal/Cstring");
 
+		if (privateSchemas.count(nodeName) && hidePrivate)
+			return;
+
 		auto constexpr head = []() constexpr {
 			if constexpr (T == NODE::ROOT)
 			{
